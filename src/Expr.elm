@@ -4,7 +4,7 @@ module Expr exposing (Expr(..), ParseError, parse, toString)
 -}
 
 import Debug exposing (todo)
-import List exposing (drop, take)
+import List exposing (drop, head, take)
 
 
 type Expr
@@ -105,15 +105,15 @@ parse s =
     in
     case toks of
         [] ->
-            Err { location = 0, msg = "" }
+            Err { location = 0, msg = "Expression is empty" }
 
         _ ->
             case parseIff toks of
                 Ok ( ex, [] ) ->
                     Ok ex
 
-                Ok ( ex, head :: body ) ->
-                    todo ""
+                Ok ( _, head :: _ ) ->
+                    Err { location = head.pos, msg = "Expected ->, <->, &, | or EOF, but found: " ++ tokenKindToString head.kind }
 
                 Err err ->
                     Err err
@@ -136,7 +136,7 @@ parseOr lst =
 
 parseAnd : List Token -> Result ParseError ( Expr, List Token )
 parseAnd lst =
-    parseBinOp (\t -> t.kind == TokOr) Or parseNeg lst
+    parseBinOp (\t -> t.kind == TokAnd) And parseNeg lst
 
 
 parseNeg : List Token -> Result ParseError ( Expr, List Token )
@@ -168,19 +168,36 @@ parseAtom lst =
                     Ok ( One, body )
 
                 TokLPar ->
-                    Debug.todo "branch 'TokLPar' not implemented"
+                    parseAtomPar TokRPar body
 
                 TokLBrac ->
-                    Debug.todo "branch 'TokLBrac' not implemented"
+                    parseAtomPar TokRBrac body
 
                 TokLSqBrac ->
-                    Debug.todo "branch 'TokLSqBrac' not implemented"
+                    parseAtomPar TokRSqBrac body
 
                 knd ->
                     Err { location = tok.pos, msg = "Expected IDENTIFIER, 1, 0, (, [, {, -, but found: " ++ tokenKindToString knd }
 
         _ ->
             Err { location = 0, msg = "Expected IDENTIFIER, 0, 1, (, [, {, -, but found EOF" }
+
+
+parseAtomPar : TokenKind -> List Token -> Result ParseError ( Expr, List Token )
+parseAtomPar rpar lst =
+    case parseIff lst of
+        Ok ( ex, { pos, kind } :: tail ) ->
+            if kind == rpar then
+                Ok ( ex, tail )
+
+            else
+                Err { location = pos, msg = "Expected " ++ tokenKindToString rpar ++ " but found " ++ tokenKindToString kind }
+
+        Ok ( _, [] ) ->
+            Err { location = 0, msg = "Expected " ++ tokenKindToString rpar ++ " but found EOF" }
+
+        Err err ->
+            Err err
 
 
 parseBinOp : (Token -> Bool) -> (Expr -> Expr -> Expr) -> (List Token -> Result ParseError ( Expr, List Token )) -> List Token -> Result ParseError ( Expr, List Token )
