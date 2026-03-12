@@ -1,5 +1,6 @@
-module Match exposing (tryMatch)
+module Match exposing (replaceAll, tryMatch)
 
+import Debug exposing (todo)
 import Dict exposing (Dict)
 import Expr exposing (..)
 
@@ -42,3 +43,33 @@ tryMatch ex pat dik =
 
         _ ->
             Nothing
+
+
+{-| Replace the identifiers with the given expressions
+-}
+replaceAll : Expr -> Dict String Expr -> Maybe Expr
+replaceAll ex dik =
+    case ex of
+        Expr.Ident name ->
+            Dict.get name dik
+
+        One ->
+            Just One
+
+        Zero ->
+            Just Zero
+
+        Neg sub ->
+            Maybe.map Neg (replaceAll sub dik)
+
+        And l r ->
+            Maybe.map2 And (replaceAll l dik) (replaceAll r dik)
+
+        Or l r ->
+            Maybe.map2 Or (replaceAll l dik) (replaceAll r dik)
+
+        Implies l r ->
+            Maybe.map2 Implies (replaceAll l dik) (replaceAll r dik)
+
+        Iff l r ->
+            Maybe.map2 Iff (replaceAll l dik) (replaceAll r dik)
