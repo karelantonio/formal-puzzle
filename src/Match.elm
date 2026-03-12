@@ -12,10 +12,13 @@ tryMatch : Expr -> Expr -> Dict String Expr -> Maybe (Dict String Expr)
 tryMatch ex pat dik =
     case ( ex, pat ) of
         ( Expr.One, Expr.One ) ->
-            Just Dict.empty
+            Just dik
 
         ( Expr.Zero, Expr.Zero ) ->
-            Just Dict.empty
+            Just dik
+
+        ( Expr.Neg a, Expr.Neg b ) ->
+            tryMatch a b dik
 
         ( Expr.And l1 r1, Expr.And l2 r2 ) ->
             tryMatch l1 l2 dik |> Maybe.andThen (\d -> tryMatch r1 r2 d)
