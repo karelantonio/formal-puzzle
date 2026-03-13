@@ -21,3 +21,15 @@ body {
   padding: 8px;
   margin: 4px;
 }
+
+.theory h3 {
+  padding-left: 12px;
+}
+
+.theory-item {
+  padding: 8px 8px 8px 24px;
+}
+
+.theory-item:hover {
+  background: rgba(0,0,0,0.12);
+}

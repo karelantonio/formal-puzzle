@@ -1,4 +1,4 @@
-module Expr exposing (Expr(..), ParseError, parse, toString)
+module Expr exposing (Expr(..), ParseError, isSimple, parse, toString)
 
 {-| An expression
 -}

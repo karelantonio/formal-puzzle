@@ -2,8 +2,9 @@ module Main exposing (..)
 
 import Browser exposing (..)
 import Expr exposing (..)
-import Html exposing (Html, button, div, input, text)
+import Html exposing (Html, button, div, h2, h3, input, text)
 import Html.Attributes exposing (class, placeholder)
+import MathML
 
 
 type alias Step =
@@ -78,12 +79,12 @@ topBar =
 
 theory : List Expr -> Html Msg
 theory lst =
-    div [ class "theory" ] (List.map theoryItem lst)
+    div [ class "theory" ] (h3 [] [ text "Teoría:" ] :: List.map theoryItem lst)
 
 
 theoryItem : Expr -> Html Msg
 theoryItem ex =
-    div [ class "theory-item" ] [ Expr.toString ex |> text ]
+    div [ class "theory-item" ] [ MathML.exprToMathML ex ]
 
 
 

@@ -1,6 +1,5 @@
 module Match exposing (replaceAll, tryMatch)
 
-import Debug exposing (todo)
 import Dict exposing (Dict)
 import Expr exposing (..)
 
