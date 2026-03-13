@@ -3,7 +3,6 @@ module Infer exposing (Transformation(..), wasApplied)
 {-| Check if this some expressions can be inferred from others
 -}
 
-import Debug exposing (todo)
 import Dict
 import Expr exposing (..)
 import Match exposing (..)
@@ -13,6 +12,7 @@ import Match exposing (..)
 -}
 type Transformation
     = Replacement Expr Expr
+    | LogicalImplication Expr Expr
 
 
 {-| Check if the second expression can be inferred from the first one using the given transformation
@@ -22,6 +22,9 @@ wasApplied trans e1 e2 =
     case trans of
         Replacement a b ->
             wasAppliedRepl ( a, b ) ( e1, e2 ) || wasAppliedRepl ( b, a ) ( e1, e2 )
+
+        LogicalImplication a b ->
+            wasLiterallyAppliedReplHere ( a, b ) ( e1, e2 )
 
 
 wasAppliedRepl : ( Expr, Expr ) -> ( Expr, Expr ) -> Bool
