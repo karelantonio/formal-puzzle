@@ -3,7 +3,6 @@ module Expr exposing (Expr(..), ParseError, parse, toString)
 {-| An expression
 -}
 
-import Debug exposing (todo)
 import List exposing (drop, head, take)
 
 

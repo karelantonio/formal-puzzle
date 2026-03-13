@@ -1,0 +1,20 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>App</title>
+  <style>body { padding: 0; margin: 0; }</style>
+  <link rel="stylesheet" href="app.css"/>
+</head>
+<body>
+<pre id="elm"></pre>
+<noscript>Es necesario JavaScript para correr esta app</noscript>
+<script src="app.js"></script>
+<script>
+var app = Elm.Main.init({
+  node: document.getElementById('app'),
+  flags: Date.now()
+});
+</script>
+</body>
+</html>
