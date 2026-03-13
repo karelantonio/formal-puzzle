@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import AllRules
 import Browser exposing (..)
 import Expr exposing (..)
 import Html exposing (Html, button, div, h2, h3, input, text)
