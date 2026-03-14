@@ -10,9 +10,16 @@ import Html.Events exposing (onClick, onInput, onSubmit)
 import MathML exposing (exprToMathML)
 
 
+type Reason
+    = Monotony Int
+    | Hypotesis
+    | Equivalence { number : Int, ref : Int }
+    | Implication { number : Int, ref : Int }
+
+
 type Step
     = Assume (Maybe Expr)
-    | Deduction { assumed : Maybe Expr, num : Int, what : Expr }
+    | Deduction { assumed : Maybe Expr, num : Int, what : Expr, reason : Reason }
 
 
 {-| The model
@@ -44,7 +51,15 @@ init _ =
             , Implies (Ident "p") (Ident "s")
             , Or (Neg (Ident "s")) (Ident "t")
             ]
-        , steps = [ Deduction { assumed = Nothing, num = 1, what = And (Ident "p") (Ident "q") }, Assume Nothing ]
+        , steps =
+            [ Deduction
+                { assumed = Nothing
+                , num = 1
+                , what = And (Ident "p") (Ident "q")
+                , reason = Hypotesis
+                }
+            , Assume Nothing
+            ]
         , ded_text = ""
         , error_msg = Nothing
         }
@@ -206,7 +221,7 @@ step2htmlAssume maex =
                 ]
 
 
-step2htmlDeduction : { assumed : Maybe Expr, num : Int, what : Expr } -> Html Msg
+step2htmlDeduction : { assumed : Maybe Expr, num : Int, what : Expr, reason : Reason } -> Html Msg
 step2htmlDeduction ded =
     tr [ class "exercise-step-deduction" ]
         [ td [] []
@@ -214,8 +229,31 @@ step2htmlDeduction ded =
             [ deductionSymbol ]
         , td [ class "exercise-step-deduction-expression" ]
             [ exprToMathML ded.what ]
-        , td [ class "exercise-step-deduction-stepnum" ] [ text ("(" ++ String.fromInt ded.num ++ ")") ]
+        , td [ class "exercise-step-deduction-stepnum" ]
+            [ text
+                (reasonToString ded.reason
+                    ++ "("
+                    ++ String.fromInt ded.num
+                    ++ ")"
+                )
+            ]
         ]
+
+
+reasonToString : Reason -> String
+reasonToString reason =
+    case reason of
+        Hypotesis ->
+            "Hip"
+
+        Monotony ref ->
+            "Monot:#" ++ String.fromInt ref
+
+        Equivalence args ->
+            "E" ++ String.fromInt args.number ++ ":#" ++ String.fromInt args.ref
+
+        Implication args ->
+            "I" ++ String.fromInt args.number ++ ":#" ++ String.fromInt args.ref
 
 
 deductionSymbol : Html Msg
