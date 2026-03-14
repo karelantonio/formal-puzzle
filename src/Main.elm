@@ -130,10 +130,18 @@ addAssumeToSteps : Maybe Expr -> List Step -> List Step
 addAssumeToSteps ex steps =
     case steps of
         (Assume _) :: rem ->
-            Assume ex :: rem
+            if currAssumed rem == ex then
+                rem
+
+            else
+                Assume ex :: rem
 
         _ ->
-            Assume ex :: steps
+            if currAssumed steps == ex then
+                steps
+
+            else
+                Assume ex :: steps
 
 
 tryToInfer : { ded_text : String, error_msg : Maybe String, theory : List Expr, steps : List Step } -> Expr -> Maybe Reason
