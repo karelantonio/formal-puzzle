@@ -18,7 +18,7 @@ type Step
 {-| The model
 -}
 type Model
-    = Ex { ded_text : String, parse_error : Maybe String, theory : List Expr, steps : List Step }
+    = Ex { ded_text : String, error_msg : Maybe String, theory : List Expr, steps : List Step }
 
 
 
@@ -29,7 +29,7 @@ type Msg
     = DeductionTextChanged String
     | AddPressed
     | TheoryPressed
-    | TheoryItemPressed Expr
+    | ExprPressed Expr
 
 
 
@@ -44,9 +44,9 @@ init _ =
             , Implies (Ident "p") (Ident "s")
             , Or (Neg (Ident "s")) (Ident "t")
             ]
-        , steps = [ Assume Nothing, Deduction { assumed = Nothing, num = 1, what = And (Ident "p") (Ident "q") } ]
+        , steps = [ Deduction { assumed = Nothing, num = 1, what = And (Ident "p") (Ident "q") }, Assume Nothing ]
         , ded_text = ""
-        , parse_error = Nothing
+        , error_msg = Nothing
         }
     , Cmd.none
     )
@@ -63,30 +63,45 @@ update msg model =
             updateEx msg ex
 
 
-updateEx : Msg -> { ded_text : String, parse_error : Maybe String, theory : List Expr, steps : List Step } -> ( Model, Cmd Msg )
+updateEx : Msg -> { ded_text : String, error_msg : Maybe String, theory : List Expr, steps : List Step } -> ( Model, Cmd Msg )
 updateEx msg ex =
     case msg of
         DeductionTextChanged txt ->
-            ( Ex { ex | ded_text = txt, parse_error = Nothing }, Cmd.none )
+            ( Ex { ex | ded_text = txt, error_msg = Nothing }, Cmd.none )
 
         AddPressed ->
             case parse ex.ded_text of
                 Ok parsed_ex ->
+                    -- Check if can infer
                     todo "Not implemented"
 
                 Err err ->
-                    ( Ex { ex | parse_error = err.msg ++ " (Posición: " ++ String.fromInt err.location ++ ")" |> Just }, Cmd.none )
+                    ( Ex { ex | error_msg = err.msg ++ " (Posición: " ++ String.fromInt err.location ++ ")" |> Just }, Cmd.none )
 
         TheoryPressed ->
-            case parse ex.ded_text of
-                Ok parsed_ex ->
-                    todo "Not implemented"
+            if String.isEmpty ex.ded_text then
+                ( Ex { ex | steps = addAssumeToSteps Nothing ex.steps }, Cmd.none )
 
-                Err err ->
-                    ( Ex { ex | parse_error = err.msg ++ " (Posición: " ++ String.fromInt err.location ++ ")" |> Just }, Cmd.none )
+            else
+                case parse ex.ded_text of
+                    Ok parsed_ex ->
+                        ( Ex { ex | steps = addAssumeToSteps (Just parsed_ex) ex.steps }, Cmd.none )
 
-        TheoryItemPressed what ->
-            ( Ex { ex | ded_text = toString what, parse_error = Nothing }, Cmd.none )
+                    Err err ->
+                        ( Ex { ex | error_msg = err.msg ++ " (Posición: " ++ String.fromInt err.location ++ ")" |> Just }, Cmd.none )
+
+        ExprPressed what ->
+            ( Ex { ex | ded_text = toString what, error_msg = Nothing }, Cmd.none )
+
+
+addAssumeToSteps : Maybe Expr -> List Step -> List Step
+addAssumeToSteps ex steps =
+    case steps of
+        (Assume _) :: rem ->
+            Assume ex :: rem
+
+        _ ->
+            Assume ex :: steps
 
 
 
@@ -101,7 +116,7 @@ view m =
             , body =
                 [ div [ class "exercise-ui" ]
                     [ topBar ex.ded_text
-                    , parseError ex.parse_error
+                    , parseError ex.error_msg
                     , revSteps ex.steps
                     , theory ex.theory
                     ]
@@ -153,7 +168,7 @@ parseError err =
 revSteps : List Step -> Html Msg
 revSteps steps =
     div [ class "exercise-ui-steps" ]
-        [ table [] [ tbody [] (List.reverse steps |> List.map step2html) ] ]
+        [ table [] [ tbody [] (List.map step2html steps) ] ]
 
 
 step2html : Step -> Html Msg
@@ -172,11 +187,13 @@ step2htmlAssume maex =
         Just what ->
             tr [ class "exercise-step-deduction" ]
                 [ td []
-                    [ div [] [ text "T," ]
-                    , exprToMathML what
+                    [ div []
+                        [ text "T,"
+                        , exprToMathML what
+                        ]
                     ]
                 , td [] [ deductionSymbol ]
-                , td [ class "exercise-step-deduction-expression" ] [ text "(Nada todavía, haz tus deducciones)" ]
+                , td [ class "exercise-step-deduction-expression exercise-step-deduction-nothing" ] [ text "(Nada todavía, haz tus deducciones)" ]
                 ]
 
         Nothing ->
@@ -213,7 +230,7 @@ theory lst =
 
 theoryItem : Expr -> Html Msg
 theoryItem ex =
-    div [ class "theory-item", onClick (TheoryItemPressed ex) ] [ MathML.exprToMathML ex ]
+    div [ class "theory-item", onClick (ExprPressed ex) ] [ MathML.exprToMathML ex ]
 
 
 

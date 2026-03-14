@@ -113,3 +113,17 @@ body {
 math mo {
   color: gray;
 }
+
+math {
+  font-family: "Latin Modern Math", math;
+  font-style: normal;
+  font-weight: normal;
+  line-height: normal;
+  font-size-adjust: none;
+  text-indent: 0;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "dtls" off;
+}

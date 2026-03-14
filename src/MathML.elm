@@ -25,7 +25,7 @@ exprToMathMLTag ex =
             [ node "mn" [] [ text "0" ] ]
 
         Neg sub ->
-            node "mo" [] [ text "¬" ] :: exprToMathMLTag sub
+            node "mo" [] [ text "¬" ] :: exprToMathMLTagPar sub
 
         And a b ->
             exprToMathMLTagPar a ++ (node "mo" [] [ text "∧" ] :: exprToMathMLTagPar b)
