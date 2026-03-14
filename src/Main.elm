@@ -130,7 +130,7 @@ addAssumeToSteps : Maybe Expr -> List Step -> List Step
 addAssumeToSteps ex steps =
     case steps of
         (Assume _) :: rem ->
-            if currAssumed rem == ex then
+            if currAssumed rem == ex && List.isEmpty rem |> not then
                 rem
 
             else
