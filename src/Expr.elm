@@ -164,7 +164,7 @@ parseAtom lst =
                     Ok ( One, body )
 
                 TokNum "0" ->
-                    Ok ( One, body )
+                    Ok ( Zero, body )
 
                 TokLPar ->
                     parseAtomPar TokRPar body

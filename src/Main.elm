@@ -397,13 +397,13 @@ reasonToString reason =
             "Hip"
 
         Monotony ref ->
-            "Monot:#" ++ String.fromInt ref
+            "Monot:" ++ String.fromInt ref
 
         Equivalence args ->
-            "E" ++ String.fromInt args.number ++ ":#" ++ String.fromInt args.ref
+            "E" ++ String.fromInt args.number ++ ":" ++ String.fromInt args.ref
 
         Implication args ->
-            "I" ++ String.fromInt args.number ++ ":#" ++ String.fromInt args.ref
+            "I" ++ String.fromInt args.number ++ ":" ++ String.fromInt args.ref
 
 
 deductionSymbol : Html Msg
