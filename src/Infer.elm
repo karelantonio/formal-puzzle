@@ -1,4 +1,4 @@
-module Infer exposing (Transformation(..), wasApplied)
+module Infer exposing (Transformation(..), tryFromHypothesis, tryFromMonotony, wasApplied)
 
 {-| Check if this some expressions can be inferred from others
 -}
@@ -72,3 +72,21 @@ wasLiterallyAppliedReplHere ( p1, p2 ) ( e1, e2 ) =
         -- Just e2 == replaceAll p2 v
         Nothing ->
             False
+
+
+{-| Given the theory, check if the given expression can be inferred
+from the hypothesis (just check if any of those is equal to this)
+-}
+tryFromHypothesis : List Expr -> Maybe Expr -> Expr -> Bool
+tryFromHypothesis lst assummed ex =
+    List.any ((==) ex) lst || assummed == Just ex
+
+
+{-| Given the list of steps, check if the given expression is
+result of monotony
+-}
+tryFromMonotony : List { assumed : Maybe Expr, what : Expr, num : Int } -> Expr -> Maybe Int
+tryFromMonotony lst ex =
+    List.filter (\e -> e.assumed == Nothing && e.what == ex) lst
+        |> List.head
+        |> Maybe.map (\e -> e.num)

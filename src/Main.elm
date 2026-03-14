@@ -1,12 +1,12 @@
 module Main exposing (..)
 
-import AllRules
 import Browser exposing (..)
 import Debug exposing (todo)
 import Expr exposing (..)
-import Html exposing (Html, button, div, form, h2, h3, input, node, table, tbody, td, text, tr)
-import Html.Attributes exposing (class, colspan, placeholder, type_, value)
+import Html exposing (Html, div, form, h3, input, node, table, tbody, td, text, tr)
+import Html.Attributes exposing (class, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
+import Infer
 import MathML exposing (exprToMathML)
 
 
@@ -87,11 +87,28 @@ updateEx msg ex =
         AddPressed ->
             case parse ex.ded_text of
                 Ok parsed_ex ->
-                    -- Check if can infer
-                    todo "Not implemented"
+                    case tryToInfer ex parsed_ex of
+                        Just reason ->
+                            ( Ex
+                                { ex
+                                    | ded_text = ""
+                                    , steps =
+                                        Deduction
+                                            { assumed = currAssumed ex.steps
+                                            , num = nextNumber ex.steps
+                                            , what = parsed_ex
+                                            , reason = reason
+                                            }
+                                            :: ex.steps
+                                }
+                            , Cmd.none
+                            )
+
+                        Nothing ->
+                            ( Ex { ex | error_msg = Just "Al parecer no hay regla de inferencia, equivalencia lógica, implicación lógica, monotonía o hipótesis que justifique eso" }, Cmd.none )
 
                 Err err ->
-                    ( Ex { ex | error_msg = err.msg ++ " (Posición: " ++ String.fromInt err.location ++ ")" |> Just }, Cmd.none )
+                    ( Ex { ex | error_msg = err.msg ++ " (Posición: " ++ String.fromInt (err.location + 1) ++ ")" |> Just }, Cmd.none )
 
         TheoryPressed ->
             if String.isEmpty ex.ded_text then
@@ -117,6 +134,91 @@ addAssumeToSteps ex steps =
 
         _ ->
             Assume ex :: steps
+
+
+tryToInfer : { ded_text : String, error_msg : Maybe String, theory : List Expr, steps : List Step } -> Expr -> Maybe Reason
+tryToInfer model ex =
+    if Infer.tryFromHypothesis model.theory (currAssumed model.steps) ex then
+        Just Hypotesis
+
+    else
+        case tryToInferMonot model.steps ex of
+            Just mon ->
+                Just mon
+
+            Nothing ->
+                todo "Not implemented"
+
+
+tryToInferMonot : List Step -> Expr -> Maybe Reason
+tryToInferMonot lst ex =
+    Maybe.andThen
+        (\_ ->
+            case
+                Infer.tryFromMonotony
+                    (lst
+                        |> List.filterMap
+                            (\e ->
+                                case e of
+                                    Deduction arg ->
+                                        Just arg
+
+                                    Assume _ ->
+                                        Nothing
+                            )
+                        |> List.map (\e -> { assumed = e.assumed, what = e.what, num = e.num })
+                    )
+                    ex
+            of
+                Just ref ->
+                    Just (Monotony ref)
+
+                Nothing ->
+                    todo "Not implemented"
+        )
+        (currAssumed lst)
+
+
+{-| Get current assumed expression
+-}
+currAssumed : List Step -> Maybe Expr
+currAssumed steps =
+    case steps of
+        (Deduction arg) :: _ ->
+            arg.assumed
+
+        (Assume what) :: _ ->
+            what
+
+        [] ->
+            Nothing
+
+
+{-| Get the next number
+-}
+nextNumber : List Step -> Int
+nextNumber lst =
+    case currNumber lst of
+        Just n ->
+            n + 1
+
+        Nothing ->
+            1
+
+
+{-| Get current number
+-}
+currNumber : List Step -> Maybe Int
+currNumber lst =
+    case lst of
+        (Deduction ded) :: _ ->
+            Just ded.num
+
+        (Assume _) :: body ->
+            currNumber body
+
+        [] ->
+            Nothing
 
 
 
