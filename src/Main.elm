@@ -2,9 +2,11 @@ module Main exposing (..)
 
 import AllRules
 import Browser exposing (..)
+import Debug exposing (todo)
 import Expr exposing (..)
 import Html exposing (Html, button, div, h2, h3, input, text)
-import Html.Attributes exposing (class, placeholder)
+import Html.Attributes exposing (class, placeholder, value)
+import Html.Events exposing (onInput)
 import MathML
 
 
@@ -15,7 +17,7 @@ type alias Step =
 {-| The model
 -}
 type Model
-    = Ex { theory : List Expr, steps : List Step }
+    = Ex { ded_text : String, theory : List Expr, steps : List Step }
 
 
 
@@ -23,7 +25,7 @@ type Model
 
 
 type Msg
-    = Msg
+    = DeductionTextChanged String
 
 
 
@@ -39,6 +41,7 @@ init _ =
             , Or (Neg (Ident "s")) (Ident "t")
             ]
         , steps = []
+        , ded_text = ""
         }
     , Cmd.none
     )
@@ -49,8 +52,17 @@ init _ =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update _ model =
-    ( model, Cmd.none )
+update msg model =
+    case model of
+        Ex ex ->
+            updateEx msg ex
+
+
+updateEx : Msg -> { ded_text : String, theory : List Expr, steps : List Step } -> ( Model, Cmd Msg )
+updateEx msg ex =
+    case msg of
+        DeductionTextChanged txt ->
+            ( Ex { ex | ded_text = txt }, Cmd.none )
 
 
 
@@ -64,17 +76,24 @@ view m =
             { title = "Ejercicio"
             , body =
                 [ div [ class "exercise-ui" ]
-                    [ topBar, theory ex.theory ]
+                    [ topBar ex.ded_text, theory ex.theory ]
                 ]
             }
 
 
-topBar : Html Msg
-topBar =
+topBar : String -> Html Msg
+topBar dedtext =
     div
         [ class "exercise-top-bar" ]
-        [ input [ placeholder "Escribe la deducción aquí", class "exercise-top-bar-input" ] []
-        , button [] [ text "+" ]
+        [ input
+            [ placeholder "Escribe la deducción aquí"
+            , value dedtext
+            , onInput DeductionTextChanged
+            , class "exercise-top-bar-input"
+            ]
+            []
+        , button [ class "exercise-top-bar-btn" ] [ text "+" ]
+        , button [ class "exercise-top-bar-btn" ] [ text "T" ]
         ]
 
 

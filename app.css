@@ -20,6 +20,33 @@ body {
   flex: 1;
   padding: 8px;
   margin: 4px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+}
+
+.exercise-top-bar-btn {
+  height: 100%;
+  align-self: center;
+  padding: 8px;
+  margin-right: 4px;
+  border: none;
+  border-radius: 4px;
+}
+
+
+/* Top bar events */
+
+.exercise-top-bar-btn {
+  background-color: rgba(0,0,0,0.1);
+}
+
+.exercise-top-bar-btn:hover {
+  background-color: rgba(0,0,0,0.15);
+}
+
+.exercise-top-bar-btn:active {
+  background-color: rgba(0,0,0,0.20);
 }
 
 .theory h3 {
@@ -32,4 +59,9 @@ body {
 
 .theory-item:hover {
   background: rgba(0,0,0,0.12);
+}
+
+/* Math related stuff */
+math mo {
+  color: gray;
 }
