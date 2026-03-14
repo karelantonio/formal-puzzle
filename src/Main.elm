@@ -6,7 +6,7 @@ import Expr exposing (..)
 import Html exposing (Html, div, form, h3, input, node, table, tbody, td, text, tr)
 import Html.Attributes exposing (class, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
-import Infer
+import Infer exposing (Transformation(..))
 import MathML exposing (exprToMathML)
 
 
@@ -155,7 +155,12 @@ tryToInfer model ex =
                 Just mon
 
             Nothing ->
-                todo "Not implemented"
+                case tryToInferRepl (extractInSameTheory model.steps) ex of
+                    Just val ->
+                        Just val
+
+                    Nothing ->
+                        todo "Not implemented"
 
 
 tryToInferMonot : List Step -> Expr -> Maybe Reason
@@ -185,6 +190,41 @@ tryToInferMonot lst ex =
                     todo "Not implemented"
         )
         (currAssumed lst)
+
+
+tryToInferRepl : List Expr -> Expr -> Maybe Reason
+tryToInferRepl itms ex =
+    let
+        res =
+            Infer.tryFromReplacement itms ex
+    in
+    Maybe.andThen
+        (\rres ->
+            Just (Equivalence { ref = rres.ref + 1, number = rres.which + 1 })
+        )
+        res
+
+
+extractInSameTheory : List Step -> List Expr
+extractInSameTheory lst =
+    let
+        curr =
+            currAssumed lst
+    in
+    List.filterMap
+        (\e ->
+            case e of
+                Deduction arg ->
+                    if arg.assumed == curr then
+                        Just arg.what
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+        )
+        lst
 
 
 {-| Get current assumed expression

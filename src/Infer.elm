@@ -1,11 +1,14 @@
-module Infer exposing (Transformation(..), tryFromHypothesis, tryFromMonotony, wasApplied)
+module Infer exposing (Transformation(..), tryFromHypothesis, tryFromMonotony, tryFromReplacement, wasApplied)
 
 {-| Check if this some expressions can be inferred from others
 -}
 
+import AllRules exposing (..)
+import Debug exposing (todo)
 import Dict
 import Expr exposing (..)
 import Match exposing (..)
+import Tuple exposing (first)
 
 
 {-| A transformation
@@ -90,3 +93,43 @@ tryFromMonotony lst ex =
     List.filter (\e -> e.assumed == Nothing && e.what == ex) lst
         |> List.head
         |> Maybe.map (\e -> e.num)
+
+
+{-| Try to infer from replacement
+-}
+tryFromReplacement : List Expr -> Expr -> Maybe { ref : Int, which : Int }
+tryFromReplacement exs new =
+    List.foldl (tryFromReplacementFold new) ( Nothing, 0 ) exs |> first
+
+
+tryFromReplacementFold : Expr -> Expr -> ( Maybe { ref : Int, which : Int }, Int ) -> ( Maybe { ref : Int, which : Int }, Int )
+tryFromReplacementFold e2 e1 ( prev, idx ) =
+    case prev of
+        Just i ->
+            ( Just i, idx + 1 )
+
+        Nothing ->
+            let
+                res =
+                    List.foldl (tryFromReplacementWithOtherFold ( e1, e2 )) ( Nothing, 0 ) AllRules.allEquivalences
+            in
+            case res of
+                ( Just a, _ ) ->
+                    ( Just { which = a, ref = idx }, idx + 1 )
+
+                ( Nothing, _ ) ->
+                    ( Nothing, idx + 1 )
+
+
+tryFromReplacementWithOtherFold : ( Expr, Expr ) -> ( Expr, Expr ) -> ( Maybe Int, Int ) -> ( Maybe Int, Int )
+tryFromReplacementWithOtherFold ( e1, e2 ) ( p1, p2 ) ( prev, idx ) =
+    case prev of
+        Just a ->
+            ( Just a, idx + 1 )
+
+        Nothing ->
+            if wasApplied (Replacement p1 p2) e1 e2 then
+                ( Just idx, idx + 1 )
+
+            else
+                ( Nothing, idx + 1 )
