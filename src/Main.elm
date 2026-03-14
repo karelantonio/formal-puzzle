@@ -4,14 +4,15 @@ import AllRules
 import Browser exposing (..)
 import Debug exposing (todo)
 import Expr exposing (..)
-import Html exposing (Html, button, div, h2, h3, input, text)
-import Html.Attributes exposing (class, placeholder, value)
-import Html.Events exposing (onInput)
-import MathML
+import Html exposing (Html, button, div, form, h2, h3, input, node, table, tbody, td, text, tr)
+import Html.Attributes exposing (class, colspan, placeholder, type_, value)
+import Html.Events exposing (onClick, onInput, onSubmit)
+import MathML exposing (exprToMathML)
 
 
-type alias Step =
-    { assumed : Maybe Expr, num : Int, what : Expr }
+type Step
+    = Assume (Maybe Expr)
+    | Deduction { assumed : Maybe Expr, num : Int, what : Expr }
 
 
 {-| The model
@@ -26,6 +27,8 @@ type Model
 
 type Msg
     = DeductionTextChanged String
+    | AddPressed
+    | TheoryPressed
 
 
 
@@ -40,7 +43,7 @@ init _ =
             , Implies (Ident "p") (Ident "s")
             , Or (Neg (Ident "s")) (Ident "t")
             ]
-        , steps = []
+        , steps = [ Assume Nothing, Deduction { assumed = Nothing, num = 1, what = And (Ident "p") (Ident "q") } ]
         , ded_text = ""
         }
     , Cmd.none
@@ -64,6 +67,12 @@ updateEx msg ex =
         DeductionTextChanged txt ->
             ( Ex { ex | ded_text = txt }, Cmd.none )
 
+        AddPressed ->
+            todo "Not implemented"
+
+        TheoryPressed ->
+            todo "Not implemented"
+
 
 
 -- The view
@@ -76,7 +85,10 @@ view m =
             { title = "Ejercicio"
             , body =
                 [ div [ class "exercise-ui" ]
-                    [ topBar ex.ded_text, theory ex.theory ]
+                    [ topBar ex.ded_text
+                    , revSteps ex.steps
+                    , theory ex.theory
+                    ]
                 ]
             }
 
@@ -85,16 +97,87 @@ topBar : String -> Html Msg
 topBar dedtext =
     div
         [ class "exercise-top-bar" ]
-        [ input
-            [ placeholder "Escribe la deducción aquí"
-            , value dedtext
-            , onInput DeductionTextChanged
-            , class "exercise-top-bar-input"
+        [ form [ onSubmit AddPressed ]
+            [ input
+                [ placeholder "Escribe la deducción aquí"
+                , value dedtext
+                , onInput DeductionTextChanged
+                , class "exercise-top-bar-input"
+                , type_ "text"
+                ]
+                []
+            , input
+                [ type_ "button"
+                , class "exercise-top-bar-btn"
+                , onClick AddPressed
+                , value "+"
+                ]
+                []
+            , input
+                [ type_ "button"
+                , class "exercise-top-bar-btn"
+                , onClick TheoryPressed
+                , value "T"
+                ]
+                []
             ]
-            []
-        , button [ class "exercise-top-bar-btn" ] [ text "+" ]
-        , button [ class "exercise-top-bar-btn" ] [ text "T" ]
         ]
+
+
+revSteps : List Step -> Html Msg
+revSteps steps =
+    div [ class "exercise-ui-steps" ]
+        [ table [] [ tbody [] (List.reverse steps |> List.map step2html) ] ]
+
+
+step2html : Step -> Html Msg
+step2html step =
+    case step of
+        Assume a ->
+            step2htmlAssume a
+
+        Deduction ded ->
+            step2htmlDeduction ded
+
+
+step2htmlAssume : Maybe Expr -> Html Msg
+step2htmlAssume maex =
+    case maex of
+        Just what ->
+            tr [ class "exercise-step-deduction" ]
+                [ td []
+                    [ div [] [ text "T," ]
+                    , exprToMathML what
+                    ]
+                , td [] [ deductionSymbol ]
+                , td [ class "exercise-step-deduction-expression" ] [ text "(Nada todavía, haz tus deducciones)" ]
+                ]
+
+        Nothing ->
+            tr [ class "exercise-step-deduction" ]
+                [ td []
+                    [ text "T"
+                    ]
+                , td [] [ deductionSymbol ]
+                , td [ class "exercise-step-deduction-expression exercise-step-deduction-nothing" ] [ text "(Nada todavía, haz tus deducciones)" ]
+                ]
+
+
+step2htmlDeduction : { assumed : Maybe Expr, num : Int, what : Expr } -> Html Msg
+step2htmlDeduction ded =
+    tr [ class "exercise-step-deduction" ]
+        [ td [] []
+        , td [ class "exercise-step-deduction-symbol" ]
+            [ deductionSymbol ]
+        , td [ class "exercise-step-deduction-expression" ]
+            [ exprToMathML ded.what ]
+        , td [ class "exercise-step-deduction-stepnum" ] [ text ("(" ++ String.fromInt ded.num ++ ")") ]
+        ]
+
+
+deductionSymbol : Html Msg
+deductionSymbol =
+    node "math" [] [ node "mrow" [] [ node "mo" [] [ text "⊢" ] ] ]
 
 
 theory : List Expr -> Html Msg

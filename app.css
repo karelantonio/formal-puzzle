@@ -10,6 +10,11 @@ body {
 }
 
 .exercise-top-bar {
+  width: 100%;
+  height: auto;
+}
+
+.exercise-top-bar form {
   display: flex;
   width: 100%;
   height: auto;
@@ -34,6 +39,26 @@ body {
   border-radius: 4px;
 }
 
+.exercise-step-assume h3 {
+  padding-left: 12px;
+}
+
+/* Deductions */
+.exercise-ui-steps {
+  margin-top: 20px;
+}
+
+.exercise-step-deduction-nothing {
+  color: gray;
+}
+
+.exercise-step-deduction {
+  width: 100%;
+}
+
+.exercise-step-deduction-expression {
+  width: 100%;
+}
 
 /* Top bar events */
 
@@ -47,6 +72,16 @@ body {
 
 .exercise-top-bar-btn:active {
   background-color: rgba(0,0,0,0.20);
+}
+
+/* Theory */
+
+.theory {
+  border-radius: 8px;
+  padding-top: 1px;
+  padding-bottom: 8px;
+  margin: 8px;
+  background: rgba(0,0,0,0.08);
 }
 
 .theory h3 {
