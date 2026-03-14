@@ -29,6 +29,7 @@ type Msg
     = DeductionTextChanged String
     | AddPressed
     | TheoryPressed
+    | TheoryItemPressed Expr
 
 
 
@@ -72,6 +73,9 @@ updateEx msg ex =
 
         TheoryPressed ->
             todo "Not implemented"
+
+        TheoryItemPressed what ->
+            ( Ex { ex | ded_text = toString what }, Cmd.none )
 
 
 
@@ -187,7 +191,7 @@ theory lst =
 
 theoryItem : Expr -> Html Msg
 theoryItem ex =
-    div [ class "theory-item" ] [ MathML.exprToMathML ex ]
+    div [ class "theory-item", onClick (TheoryItemPressed ex) ] [ MathML.exprToMathML ex ]
 
 
 
