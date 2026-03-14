@@ -74,6 +74,19 @@ body {
   background-color: rgba(0,0,0,0.20);
 }
 
+/* Parse errors */
+
+.exercise-parse-err {
+  width: 100%;
+}
+
+.exercise-parse-err div {
+  padding: 12px 8px 12px 8px;
+  margin: 4px;
+  background: rgba(255,0,0,0.3);
+  border-radius: 8px;
+}
+
 /* Theory */
 
 .theory {

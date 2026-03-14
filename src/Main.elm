@@ -18,7 +18,7 @@ type Step
 {-| The model
 -}
 type Model
-    = Ex { ded_text : String, theory : List Expr, steps : List Step }
+    = Ex { ded_text : String, parse_error : Maybe String, theory : List Expr, steps : List Step }
 
 
 
@@ -46,6 +46,7 @@ init _ =
             ]
         , steps = [ Assume Nothing, Deduction { assumed = Nothing, num = 1, what = And (Ident "p") (Ident "q") } ]
         , ded_text = ""
+        , parse_error = Nothing
         }
     , Cmd.none
     )
@@ -62,20 +63,30 @@ update msg model =
             updateEx msg ex
 
 
-updateEx : Msg -> { ded_text : String, theory : List Expr, steps : List Step } -> ( Model, Cmd Msg )
+updateEx : Msg -> { ded_text : String, parse_error : Maybe String, theory : List Expr, steps : List Step } -> ( Model, Cmd Msg )
 updateEx msg ex =
     case msg of
         DeductionTextChanged txt ->
-            ( Ex { ex | ded_text = txt }, Cmd.none )
+            ( Ex { ex | ded_text = txt, parse_error = Nothing }, Cmd.none )
 
         AddPressed ->
-            todo "Not implemented"
+            case parse ex.ded_text of
+                Ok parsed_ex ->
+                    todo "Not implemented"
+
+                Err err ->
+                    ( Ex { ex | parse_error = err.msg ++ " (Posición: " ++ String.fromInt err.location ++ ")" |> Just }, Cmd.none )
 
         TheoryPressed ->
-            todo "Not implemented"
+            case parse ex.ded_text of
+                Ok parsed_ex ->
+                    todo "Not implemented"
+
+                Err err ->
+                    ( Ex { ex | parse_error = err.msg ++ " (Posición: " ++ String.fromInt err.location ++ ")" |> Just }, Cmd.none )
 
         TheoryItemPressed what ->
-            ( Ex { ex | ded_text = toString what }, Cmd.none )
+            ( Ex { ex | ded_text = toString what, parse_error = Nothing }, Cmd.none )
 
 
 
@@ -90,6 +101,7 @@ view m =
             , body =
                 [ div [ class "exercise-ui" ]
                     [ topBar ex.ded_text
+                    , parseError ex.parse_error
                     , revSteps ex.steps
                     , theory ex.theory
                     ]
@@ -126,6 +138,16 @@ topBar dedtext =
                 []
             ]
         ]
+
+
+parseError : Maybe String -> Html Msg
+parseError err =
+    case err of
+        Just msg ->
+            div [ class "exercise-parse-err" ] [ div [] [ text msg ] ]
+
+        Nothing ->
+            div [ class "exercise-parse-err" ] []
 
 
 revSteps : List Step -> Html Msg
