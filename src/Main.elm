@@ -90,19 +90,12 @@ updateEx msg ex =
         AddPressed ->
             case parse ex.ded_text of
                 Ok parsed_ex ->
-                    case tryToInfer ex parsed_ex of
-                        Just reason ->
+                    case tryToInferDed { theory = ex.theory, steps = ex.steps } parsed_ex of
+                        Just ded ->
                             ( Ex
                                 { ex
                                     | ded_text = ""
-                                    , steps =
-                                        Deduction
-                                            { assumed = currAssumed ex.steps
-                                            , num = nextNumber ex.steps
-                                            , what = parsed_ex
-                                            , reason = reason
-                                            }
-                                            :: ex.steps
+                                    , steps = ded :: ex.steps
                                 }
                             , Cmd.none
                             )
@@ -147,7 +140,21 @@ addAssumeToSteps ex steps =
                 Assume ex :: steps
 
 
-tryToInfer : { ded_text : String, error_msg : Maybe String, theory : List Expr, steps : List Step } -> Expr -> Maybe Reason
+tryToInferDed : { theory : List Expr, steps : List Step } -> Expr -> Maybe Step
+tryToInferDed mod ex =
+    Maybe.map
+        (\reason ->
+            Deduction
+                { assumed = currAssumed mod.steps
+                , num = nextNumber mod.steps
+                , what = ex
+                , reason = reason
+                }
+        )
+        (tryToInfer mod ex)
+
+
+tryToInfer : { theory : List Expr, steps : List Step } -> Expr -> Maybe Reason
 tryToInfer model ex =
     if Infer.tryFromHypothesis model.theory (currAssumed model.steps) ex then
         Just Hypotesis
