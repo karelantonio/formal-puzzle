@@ -3,8 +3,8 @@ module Main exposing (..)
 import Browser exposing (..)
 import Debug exposing (todo)
 import Expr exposing (..)
-import Html exposing (Html, div, form, h3, input, node, table, tbody, td, text, tr)
-import Html.Attributes exposing (class, placeholder, type_, value)
+import Html exposing (Html, div, form, h3, input, node, span, table, tbody, td, text, tr)
+import Html.Attributes exposing (class, colspan, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Infer exposing (Transformation(..))
 import MathML exposing (exprToMathML)
@@ -366,13 +366,13 @@ step2htmlAssume maex =
         Just what ->
             tr [ class "exercise-step-deduction" ]
                 [ td []
-                    [ div []
+                    [ div [ class "clickable", onClick (ExprPressed what) ]
                         [ text "T,"
                         , exprToMathML what
                         ]
                     ]
                 , td [] [ deductionSymbol ]
-                , td [ class "exercise-step-deduction-expression exercise-step-deduction-nothing" ] [ text "(Nada todavía, haz tus deducciones)" ]
+                , td [ colspan 3, class "exercise-step-deduction-expression exercise-step-deduction-nothing" ] [ text "(Nada todavía, haz tus deducciones)" ]
                 ]
 
         Nothing ->
@@ -381,7 +381,7 @@ step2htmlAssume maex =
                     [ text "T"
                     ]
                 , td [] [ deductionSymbol ]
-                , td [ class "exercise-step-deduction-expression exercise-step-deduction-nothing" ] [ text "(Nada todavía, haz tus deducciones)" ]
+                , td [ colspan 3, class "exercise-step-deduction-expression exercise-step-deduction-nothing" ] [ text "(Nada todavía, haz tus deducciones)" ]
                 ]
 
 
@@ -391,16 +391,12 @@ step2htmlDeduction ded =
         [ td [] []
         , td [ class "exercise-step-deduction-symbol" ]
             [ deductionSymbol ]
-        , td [ class "exercise-step-deduction-expression" ]
+        , td [ onClick (ExprPressed ded.what), class "exercise-step-deduction-expression clickable" ]
             [ exprToMathML ded.what ]
+        , td [ class "exercise-step-deduction-reason" ]
+            [ text (reasonToString ded.reason) ]
         , td [ class "exercise-step-deduction-stepnum" ]
-            [ text
-                (reasonToString ded.reason
-                    ++ "("
-                    ++ String.fromInt ded.num
-                    ++ ")"
-                )
-            ]
+            [ text ("(" ++ String.fromInt ded.num ++ ")") ]
         ]
 
 
@@ -438,7 +434,7 @@ theory lst =
 
 theoryItem : Expr -> Html Msg
 theoryItem ex =
-    div [ class "theory-item", onClick (ExprPressed ex) ] [ MathML.exprToMathML ex ]
+    div [ class "theory-item clickable", onClick (ExprPressed ex) ] [ MathML.exprToMathML ex ]
 
 
 

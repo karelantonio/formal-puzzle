@@ -105,7 +105,9 @@ body {
   padding: 8px 8px 8px 24px;
 }
 
-.theory-item:hover {
+/* Clickable area hints */
+
+.clickable:hover {
   background: rgba(0,0,0,0.12);
 }
 
