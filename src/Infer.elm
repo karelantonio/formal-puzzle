@@ -4,13 +4,12 @@ module Infer exposing (InferenceRefs(..), Transformation(..), tryFromHypothesis,
 -}
 
 import AllRules exposing (..)
-import Debug exposing (todo)
 import Dict
 import Expr exposing (..)
 import List exposing (head)
 import Match exposing (..)
 import Tuple
-import Utils exposing (indexed, indexedProduct, listProduct)
+import Utils exposing (indexed, listProduct)
 
 
 {-| A transformation
