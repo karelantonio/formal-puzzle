@@ -39,6 +39,22 @@ allImplications : List ( Expr, Expr )
 allImplications =
     [ pr "A" "B->(A&B)"
     , pr "(A->B)&(B->C)" "A->C"
+    , pr "-B->-A" "A->B"
+    , pr "(A->C)&(B->C)" "(A|B)->C"
+    , pr "(A->B)&(-A->B)" "B"
+    , pr "-A->(B&-B)" "A"
+    , pr "A->(B&-B)" "-A"
+    , pr "-A->A" "A"
+    , pr "A->-A" "-A"
+    , pr "A->(-B->(C&-C))" "A->B"
+    , pr "(A&-B)->B" "A->B"
+    , pr "(A&-B)->-A" "A->B"
+    , pr "(A->B)&(-A->C)" "B|C"
+    , pr "(-A->B)" "A|B"
+    , pr "A->B" "B|-A"
+    , pr "A" "A|B"
+    , pr "A&B" "A"
+    , pr "A" "B->A"
     ]
 
 

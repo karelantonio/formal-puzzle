@@ -4,12 +4,10 @@ module Infer exposing (Transformation(..), tryFromHypothesis, tryFromImplication
 -}
 
 import AllRules exposing (..)
-import Debug exposing (todo)
 import Dict
 import Expr exposing (..)
 import Match exposing (..)
-import Tuple exposing (first)
-import Utils exposing (isJust)
+import Tuple
 
 
 {-| A transformation
