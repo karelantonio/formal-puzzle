@@ -4,7 +4,6 @@ module Infer exposing (Transformation(..), tryFromHypothesis, tryFromMonotony, t
 -}
 
 import AllRules exposing (..)
-import Debug exposing (todo)
 import Dict
 import Expr exposing (..)
 import Match exposing (..)
@@ -44,8 +43,8 @@ wasAppliedRepl ( p1, p2 ) ( e1, e2 ) =
             ( Expr.Zero, Expr.Zero ) ->
                 False
 
-            ( Ident a, Ident b ) ->
-                a == b
+            ( Ident _, Ident _ ) ->
+                False
 
             ( Neg a, Neg b ) ->
                 wasAppliedRepl ( p1, p2 ) ( a, b )
