@@ -179,7 +179,7 @@ tryToInfer model ex =
                                 Just val
 
                             Nothing ->
-                                todo "Not implemented"
+                                tryToInferRule model.steps ex
 
 
 tryToInferMonot : List Step -> Expr -> Maybe Reason
@@ -224,6 +224,30 @@ tryToInferRepl itms ex =
 tryToInferImpl : List { number : Int, ex : Expr } -> Expr -> Maybe Reason
 tryToInferImpl lst ex =
     Infer.tryFromImplication lst ex |> Maybe.map (\e -> Implication { number = e.what, ref = e.ref })
+
+
+tryToInferRule : List Step -> Expr -> Maybe Reason
+tryToInferRule lst ex =
+    Infer.tryFromInferenceRule (List.filterMap tryToInferRuleStep lst) (currAssumed lst) ex
+        |> Maybe.map
+            (\e ->
+                case e.refs of
+                    Infer.One ref ->
+                        InferenceRule1 { number = e.number + 1, ref1 = ref }
+
+                    Infer.Two ref1 ref2 ->
+                        InferenceRule2 { number = e.number + 1, ref1 = ref1, ref2 = ref2 }
+            )
+
+
+tryToInferRuleStep : Step -> Maybe { number : Int, assum : Maybe Expr, what : Expr }
+tryToInferRuleStep step =
+    case step of
+        Deduction ded ->
+            Just { number = ded.num, assum = ded.assumed, what = ded.what }
+
+        Assume _ ->
+            Nothing
 
 
 extractInSameTheory : List Step -> List { number : Int, ex : Expr }

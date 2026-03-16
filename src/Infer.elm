@@ -1,13 +1,16 @@
-module Infer exposing (Transformation(..), tryFromHypothesis, tryFromImplication, tryFromMonotony, tryFromReplacement, wasApplied)
+module Infer exposing (InferenceRefs(..), Transformation(..), tryFromHypothesis, tryFromImplication, tryFromInferenceRule, tryFromMonotony, tryFromReplacement, wasApplied)
 
 {-| Check if this some expressions can be inferred from others
 -}
 
 import AllRules exposing (..)
+import Debug exposing (todo)
 import Dict
 import Expr exposing (..)
+import List exposing (head)
 import Match exposing (..)
 import Tuple
+import Utils exposing (indexed, indexedProduct, listProduct)
 
 
 {-| A transformation
@@ -154,3 +157,121 @@ tryFromImplicationCheck res other ( i, ( p1, p2 ) ) =
 
     else
         Nothing
+
+
+type InferenceRefs
+    = One Int
+    | Two Int Int
+
+
+tryFromInferenceRule : List { number : Int, assum : Maybe Expr, what : Expr } -> Maybe Expr -> Expr -> Maybe { refs : InferenceRefs, number : Int }
+tryFromInferenceRule steps hyp res =
+    case hyp of
+        Just val ->
+            tryFromInferenceRuleNonAssuming steps (Just val) res
+
+        Nothing ->
+            case tryFromInferenceRuleAssuming steps res of
+                Just val ->
+                    Just val
+
+                Nothing ->
+                    tryFromInferenceRuleNonAssuming steps Nothing res
+
+
+tryFromInferenceRuleAssuming : List { number : Int, assum : Maybe Expr, what : Expr } -> Expr -> Maybe { refs : InferenceRefs, number : Int }
+tryFromInferenceRuleAssuming lst ex =
+    List.filterMap
+        (tryFromInferenceRuleAssumingCheck ex)
+        (listProduct lst (indexed AllRules.allInferenceRulesAssuming))
+        |> List.head
+
+
+tryFromInferenceRuleAssumingCheck : Expr -> ( { number : Int, assum : Maybe Expr, what : Expr }, ( Int, { assum : Expr, what : Expr, thesis : Expr } ) ) -> Maybe { number : Int, refs : InferenceRefs }
+tryFromInferenceRuleAssumingCheck ex ( oex, ( num, rule ) ) =
+    case oex.assum of
+        Just assum ->
+            tryMatch assum rule.assum Dict.empty
+                |> Maybe.andThen (tryMatch oex.what rule.what)
+                |> Maybe.andThen (tryMatch ex rule.thesis)
+                |> Maybe.andThen (replaceAll rule.thesis)
+                |> Maybe.andThen
+                    (\e ->
+                        if e == ex then
+                            Just { number = num, refs = One oex.number }
+
+                        else
+                            Nothing
+                    )
+
+        _ ->
+            Nothing
+
+
+tryFromInferenceRuleNonAssuming : List { number : Int, assum : Maybe Expr, what : Expr } -> Maybe Expr -> Expr -> Maybe { refs : InferenceRefs, number : Int }
+tryFromInferenceRuleNonAssuming lst ass ex =
+    -- Filter by the same theory
+    let
+        theo =
+            List.filterMap (tryFromInferenceFilterSameTheory ass) lst
+    in
+    case
+        List.filterMap
+            (tryFromInferenceFilterMatch1 ex)
+            (listProduct theo (indexed allInferenceRulesOne))
+            |> head
+    of
+        Just v ->
+            Just v
+
+        Nothing ->
+            List.filterMap
+                (tryFromInferenceFilterMatch2 ex)
+                (listProduct theo (listProduct theo (indexed AllRules.allInferenceRulesTwo)))
+                |> head
+
+
+tryFromInferenceFilterSameTheory : Maybe Expr -> { number : Int, assum : Maybe Expr, what : Expr } -> Maybe { number : Int, what : Expr }
+tryFromInferenceFilterSameTheory orig e =
+    if orig == e.assum then
+        Just { number = e.number, what = e.what }
+
+    else
+        Nothing
+
+
+tryFromInferenceFilterMatch1 :
+    Expr
+    -> ( { number : Int, what : Expr }, ( Int, { what : Expr, thesis : Expr } ) )
+    -> Maybe { refs : InferenceRefs, number : Int }
+tryFromInferenceFilterMatch1 ex ( oex, ( idx, pat ) ) =
+    tryMatch oex.what pat.what Dict.empty
+        |> Maybe.andThen (tryMatch ex pat.thesis)
+        |> Maybe.andThen (replaceAll pat.thesis)
+        |> Maybe.andThen
+            (\e ->
+                if e == ex then
+                    Just { number = idx, refs = One oex.number }
+
+                else
+                    Nothing
+            )
+
+
+tryFromInferenceFilterMatch2 :
+    Expr
+    -> ( { number : Int, what : Expr }, ( { number : Int, what : Expr }, ( Int, { what1 : Expr, what2 : Expr, thesis : Expr } ) ) )
+    -> Maybe { refs : InferenceRefs, number : Int }
+tryFromInferenceFilterMatch2 ex ( e1, ( e2, ( i, pat ) ) ) =
+    tryMatch e1.what pat.what1 Dict.empty
+        |> Maybe.andThen (tryMatch e2.what pat.what2)
+        |> Maybe.andThen (tryMatch ex pat.thesis)
+        |> Maybe.andThen (replaceAll pat.thesis)
+        |> Maybe.andThen
+            (\e ->
+                if e == ex then
+                    Just { number = i, refs = Two e1.number e2.number }
+
+                else
+                    Nothing
+            )
