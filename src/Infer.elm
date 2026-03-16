@@ -1,13 +1,15 @@
-module Infer exposing (Transformation(..), tryFromHypothesis, tryFromMonotony, tryFromReplacement, wasApplied)
+module Infer exposing (Transformation(..), tryFromHypothesis, tryFromImplication, tryFromMonotony, tryFromReplacement, wasApplied)
 
 {-| Check if this some expressions can be inferred from others
 -}
 
 import AllRules exposing (..)
+import Debug exposing (todo)
 import Dict
 import Expr exposing (..)
 import Match exposing (..)
 import Tuple exposing (first)
+import Utils exposing (isJust)
 
 
 {-| A transformation
@@ -96,39 +98,61 @@ tryFromMonotony lst ex =
 
 {-| Try to infer from replacement
 -}
-tryFromReplacement : List Expr -> Expr -> Maybe { ref : Int, which : Int }
+tryFromReplacement : List { number : Int, ex : Expr } -> Expr -> Maybe { ref : Int, which : Int }
 tryFromReplacement exs new =
-    List.foldl (tryFromReplacementFold new) ( Nothing, 0 ) exs |> first
+    case List.filterMap (tryFromReplacementFilter new) exs of
+        hd :: _ ->
+            Just hd
+
+        [] ->
+            Nothing
 
 
-tryFromReplacementFold : Expr -> Expr -> ( Maybe { ref : Int, which : Int }, Int ) -> ( Maybe { ref : Int, which : Int }, Int )
-tryFromReplacementFold e2 e1 ( prev, idx ) =
-    case prev of
-        Just i ->
-            ( Just i, idx + 1 )
+tryFromReplacementFilter : Expr -> { number : Int, ex : Expr } -> Maybe { which : Int, ref : Int }
+tryFromReplacementFilter res { number, ex } =
+    case
+        List.filterMap (tryFromReplacementFilterCheck res ex) (List.indexedMap Tuple.pair allEquivalences)
+    of
+        equiv :: _ ->
+            Just { which = equiv, ref = number }
 
-        Nothing ->
-            let
-                res =
-                    List.foldl (tryFromReplacementWithOtherFold ( e1, e2 )) ( Nothing, 0 ) AllRules.allEquivalences
-            in
-            case res of
-                ( Just a, _ ) ->
-                    ( Just { which = a, ref = idx }, idx + 1 )
-
-                ( Nothing, _ ) ->
-                    ( Nothing, idx + 1 )
+        [] ->
+            Nothing
 
 
-tryFromReplacementWithOtherFold : ( Expr, Expr ) -> ( Expr, Expr ) -> ( Maybe Int, Int ) -> ( Maybe Int, Int )
-tryFromReplacementWithOtherFold ( e1, e2 ) ( p1, p2 ) ( prev, idx ) =
-    case prev of
-        Just a ->
-            ( Just a, idx + 1 )
+tryFromReplacementFilterCheck : Expr -> Expr -> ( Int, ( Expr, Expr ) ) -> Maybe Int
+tryFromReplacementFilterCheck res ex ( i, ( p1, p2 ) ) =
+    if wasApplied (Replacement p1 p2) ex res then
+        Just i
 
-        Nothing ->
-            if wasApplied (Replacement p1 p2) e1 e2 then
-                ( Just idx, idx + 1 )
+    else
+        Nothing
 
-            else
-                ( Nothing, idx + 1 )
+
+tryFromImplication : List { number : Int, ex : Expr } -> Expr -> Maybe { what : Int, ref : Int }
+tryFromImplication lst res =
+    case List.filterMap (tryFromImplicationFilter res) (List.map (\e -> ( e.number, e.ex )) lst) of
+        { impl, ref } :: _ ->
+            Just { what = impl, ref = ref }
+
+        [] ->
+            Nothing
+
+
+tryFromImplicationFilter : Expr -> ( Int, Expr ) -> Maybe { impl : Int, ref : Int }
+tryFromImplicationFilter res ( r, other ) =
+    case List.filterMap (tryFromImplicationCheck res other) (List.indexedMap Tuple.pair allImplications) of
+        i :: _ ->
+            Just { impl = i, ref = r }
+
+        [] ->
+            Nothing
+
+
+tryFromImplicationCheck : Expr -> Expr -> ( Int, ( Expr, Expr ) ) -> Maybe Int
+tryFromImplicationCheck res other ( i, ( p1, p2 ) ) =
+    if wasApplied (LogicalImplication p1 p2) other res then
+        Just i
+
+    else
+        Nothing

@@ -15,6 +15,8 @@ type Reason
     | Hypotesis
     | Equivalence { number : Int, ref : Int }
     | Implication { number : Int, ref : Int }
+    | InferenceRule1 { number : Int, ref1 : Int }
+    | InferenceRule2 { number : Int, ref1 : Int, ref2 : Int }
 
 
 type Step
@@ -50,6 +52,7 @@ init _ =
             [ And (Ident "p") (Ident "q")
             , Implies (Ident "p") (Ident "s")
             , Or (Neg (Ident "s")) (Ident "t")
+            , And (Implies (Ident "a") (Ident "b")) (Implies (Ident "b") (Ident "c"))
             ]
         , steps =
             [ Deduction
@@ -155,44 +158,50 @@ tryToInfer model ex =
                 Just mon
 
             Nothing ->
-                case tryToInferRepl (extractInSameTheory model.steps) ex of
+                let
+                    stps =
+                        extractInSameTheory model.steps
+                in
+                case tryToInferRepl stps ex of
                     Just val ->
                         Just val
 
                     Nothing ->
-                        todo "Not implemented"
+                        case tryToInferImpl stps ex of
+                            Just val ->
+                                Just val
+
+                            Nothing ->
+                                todo "Not implemented"
 
 
 tryToInferMonot : List Step -> Expr -> Maybe Reason
 tryToInferMonot lst ex =
     Maybe.andThen
         (\_ ->
-            case
-                Infer.tryFromMonotony
-                    (lst
-                        |> List.filterMap
-                            (\e ->
-                                case e of
-                                    Deduction arg ->
-                                        Just arg
-
-                                    Assume _ ->
-                                        Nothing
-                            )
-                        |> List.map (\e -> { assumed = e.assumed, what = e.what, num = e.num })
+            Maybe.map Monotony
+                (Infer.tryFromMonotony
+                    (List.filterMap
+                        tryToInferMonotFilterDeduction
+                        lst
                     )
                     ex
-            of
-                Just ref ->
-                    Just (Monotony ref)
-
-                Nothing ->
-                    todo "Not implemented"
+                )
         )
         (currAssumed lst)
 
 
-tryToInferRepl : List Expr -> Expr -> Maybe Reason
+tryToInferMonotFilterDeduction : Step -> Maybe { assumed : Maybe Expr, num : Int, what : Expr }
+tryToInferMonotFilterDeduction step =
+    case step of
+        Deduction arg ->
+            Just { assumed = arg.assumed, num = arg.num, what = arg.what }
+
+        _ ->
+            Nothing
+
+
+tryToInferRepl : List { number : Int, ex : Expr } -> Expr -> Maybe Reason
 tryToInferRepl itms ex =
     let
         res =
@@ -200,12 +209,17 @@ tryToInferRepl itms ex =
     in
     Maybe.andThen
         (\rres ->
-            Just (Equivalence { ref = rres.ref + 1, number = rres.which + 1 })
+            Just (Equivalence { ref = rres.ref, number = rres.which + 1 })
         )
         res
 
 
-extractInSameTheory : List Step -> List Expr
+tryToInferImpl : List { number : Int, ex : Expr } -> Expr -> Maybe Reason
+tryToInferImpl lst ex =
+    Infer.tryFromImplication lst ex |> Maybe.map (\e -> Implication { number = e.what, ref = e.ref })
+
+
+extractInSameTheory : List Step -> List { number : Int, ex : Expr }
 extractInSameTheory lst =
     let
         curr =
@@ -216,7 +230,7 @@ extractInSameTheory lst =
             case e of
                 Deduction arg ->
                     if arg.assumed == curr then
-                        Just arg.what
+                        Just { number = arg.num, ex = arg.what }
 
                     else
                         Nothing
@@ -404,6 +418,12 @@ reasonToString reason =
 
         Implication args ->
             "I" ++ String.fromInt args.number ++ ":" ++ String.fromInt args.ref
+
+        InferenceRule1 args ->
+            "R" ++ String.fromInt args.number ++ ":" ++ String.fromInt args.ref1
+
+        InferenceRule2 args ->
+            "R" ++ String.fromInt args.number ++ ":" ++ String.fromInt args.ref1 ++ "," ++ String.fromInt args.ref2
 
 
 deductionSymbol : Html Msg
