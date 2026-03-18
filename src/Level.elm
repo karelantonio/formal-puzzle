@@ -3,12 +3,13 @@ module Level exposing (..)
 import Browser exposing (..)
 import Expr exposing (..)
 import Html exposing (Html, div, form, h3, input, node, table, tbody, td, text, tr)
-import Html.Attributes exposing (class, colspan, placeholder, type_, value)
+import Html.Attributes exposing (class, colspan, id, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Infer exposing (Transformation(..))
 import LevelTys exposing (..)
 import MathML exposing (exprToMathML)
 import TeaCommon exposing (..)
+import Utils
 
 
 
@@ -43,7 +44,7 @@ updateEx msg ex =
                                     , steps = ded :: ex.steps
                                 }
                                 |> LevelModelV
-                            , Cmd.none
+                            , Utils.scrollToBottom "exercise-content"
                             )
 
                         Nothing ->
@@ -52,7 +53,7 @@ updateEx msg ex =
                                     | error_msg = Just "Al parecer no hay regla de inferencia, equivalencia lógica, implicación lógica, monotonía o hipótesis que justifique eso"
                                 }
                                 |> LevelModelV
-                            , Cmd.none
+                            , Utils.scrollToBottom "exercise-ui"
                             )
 
                 Err err ->
@@ -61,7 +62,7 @@ updateEx msg ex =
                             | error_msg = err.msg ++ " (Posición: " ++ String.fromInt (err.location + 1) ++ ")" |> Just
                         }
                         |> LevelModelV
-                    , Cmd.none
+                    , Utils.scrollToBottom "exercise-ui"
                     )
 
         TheoryPressed ->
@@ -283,38 +284,40 @@ view m =
             { title = "Ejercicio"
             , body =
                 [ div [ class "exercise-ui" ]
-                    [ topBar ex.ded_text
-                    , parseError ex.error_msg
-                    , revSteps ex.steps
-                    , theory ex.theory
+                    [ div [ class "exercise-content", id "exercise-content" ]
+                        [ theory ex.theory
+                        , theSteps ex.steps
+                        , parseError ex.error_msg
+                        ]
+                    , bottomBar ex.ded_text
                     ]
                 ]
             }
 
 
-topBar : String -> Html Msg
-topBar dedtext =
+bottomBar : String -> Html Msg
+bottomBar dedtext =
     div
-        [ class "exercise-top-bar" ]
+        [ class "exercise-bottom-bar" ]
         [ form [ onSubmit (AddPressed |> LevelMsgV) ]
             [ input
                 [ placeholder "Escribe la deducción aquí"
                 , value dedtext
                 , onInput (\t -> DeductionTextChanged t |> LevelMsgV)
-                , class "exercise-top-bar-input"
+                , class "exercise-bottom-bar-input"
                 , type_ "text"
                 ]
                 []
             , input
                 [ type_ "button"
-                , class "exercise-top-bar-btn"
+                , class "exercise-bottom-bar-btn"
                 , onClick (AddPressed |> LevelMsgV)
                 , value "+"
                 ]
                 []
             , input
                 [ type_ "button"
-                , class "exercise-top-bar-btn"
+                , class "exercise-bottom-bar-btn"
                 , onClick (TheoryPressed |> LevelMsgV)
                 , value "T"
                 ]
@@ -333,10 +336,10 @@ parseError err =
             div [ class "exercise-parse-err" ] []
 
 
-revSteps : List Step -> Html Msg
-revSteps steps =
+theSteps : List Step -> Html Msg
+theSteps steps =
     div [ class "exercise-ui-steps" ]
-        [ table [] [ tbody [] (List.map step2html steps) ] ]
+        [ table [] [ tbody [] (List.map step2html steps |> List.reverse) ] ]
 
 
 step2html : Step -> Html Msg

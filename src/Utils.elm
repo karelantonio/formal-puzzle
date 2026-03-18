@@ -1,4 +1,8 @@
-module Utils exposing (..)
+port module Utils exposing (..)
+
+import Browser exposing (..)
+import Process exposing (sleep)
+import Task exposing (Task)
 
 
 indexed : List a -> List ( Int, a )
@@ -39,3 +43,10 @@ isNothing e =
 
         Nothing ->
             True
+
+
+
+-- Given the ID, create a task that scrolls that element to bottom
+
+
+port scrollToBottom : String -> Cmd msg

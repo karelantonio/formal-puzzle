@@ -15,6 +15,15 @@ var app = Elm.Main.init({
   node: document.getElementById('app'),
   flags: Date.now()
 });
+app.ports.scrollToBottom.subscribe(function(id){
+  requestAnimationFrame(function(_){
+    var elem = document.getElementById(id);
+    if(!elem){
+      return;
+    }
+    elem.scroll(0, elem.scrollHeight);
+  });
+});
 </script>
 </body>
 </html>

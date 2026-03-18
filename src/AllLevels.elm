@@ -14,8 +14,8 @@ levels : List Level
 levels =
     [ { name = "Primeros Pasos"
       , theory =
-            [ And (Ident "p") (Ident "-q")
-            , Implies (Ident "-q") (Ident "r")
+            [ And (Ident "p") (Ident "q" |> Neg)
+            , Implies (Ident "q" |> Neg) (Ident "r")
             ]
       , approx_steps = 3
       }
