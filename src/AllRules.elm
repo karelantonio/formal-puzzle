@@ -3,7 +3,6 @@ module AllRules exposing (allEquivalences, allImplications, allInferenceRulesAss
 {-| All the rules
 -}
 
-import Debug exposing (todo)
 import Expr exposing (..)
 
 
@@ -120,4 +119,6 @@ parseAndUnwrap s =
             res
 
         Err err ->
-            todo ("Not implemented (" ++ Debug.toString err ++ ")")
+            -- Workaround, but should reach here
+            -- todo ("Not implemented (" ++ Debug.toString err ++ ")")
+            Ident "[redacted]"

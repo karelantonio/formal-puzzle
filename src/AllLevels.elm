@@ -1,7 +1,6 @@
 module AllLevels exposing (..)
 
 import Browser exposing (Document)
-import Debug exposing (todo)
 import Expr exposing (..)
 import Html exposing (Html, div, h2, h4, p, text)
 import Html.Attributes exposing (class)
