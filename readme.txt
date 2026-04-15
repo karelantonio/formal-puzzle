@@ -6,6 +6,8 @@ se alojen algunos puzzles de lógica similares a los que se
 encuentran en los exámenes de la asignatura Lógica de 1er
 semestre de Ciencias de la Computación de la UH.
 
+Puedes probar en vivo la app en: https://karelantonio.github.io/formal-puzzle
+
 
 Tabla de contenidos
 ===================
