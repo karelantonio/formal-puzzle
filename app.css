@@ -3,6 +3,14 @@ body {
   margin: 0;
 }
 
+.all-levels-ui-item h4 {
+  margin: 0px 8px;
+}
+
+.all-levels-ui-item p {
+  margin: 8px;
+}
+
 .exercise-ui {
   width: 100%;
   height: 100%;
