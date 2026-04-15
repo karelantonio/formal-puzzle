@@ -18,7 +18,7 @@ type Step
 
 
 type LevelModel
-    = Ex { ded_text : String, error_msg : Maybe String, theory : List Expr, steps : List Step }
+    = Ex { descr : String, goal : Expr, ded_text : String, error_msg : Maybe String, theory : List Expr, steps : List Step }
 
 
 type LevelMsg

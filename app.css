@@ -110,6 +110,10 @@ body {
   padding-left: 12px;
 }
 
+#theory-description {
+  padding: 0px 8px;
+}
+
 .theory-item {
   padding: 8px 8px 8px 24px;
 }

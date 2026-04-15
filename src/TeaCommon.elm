@@ -11,7 +11,9 @@ import LevelTys
 type alias Level =
     { name : String
     , theory : List Expr
+    , goal : Expr
     , approx_steps : Int
+    , descr : String
     }
 
 

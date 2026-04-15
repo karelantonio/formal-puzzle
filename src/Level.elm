@@ -2,7 +2,7 @@ module Level exposing (..)
 
 import Browser exposing (..)
 import Expr exposing (..)
-import Html exposing (Html, div, form, h3, input, node, table, tbody, td, text, tr)
+import Html exposing (Html, div, form, h3, input, node, p, table, tbody, td, text, tr)
 import Html.Attributes exposing (class, colspan, id, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Infer exposing (Transformation(..))
@@ -26,7 +26,7 @@ update msg model =
 
 updateEx :
     LevelMsg
-    -> { ded_text : String, error_msg : Maybe String, theory : List Expr, steps : List Step }
+    -> { descr : String, goal : Expr, ded_text : String, error_msg : Maybe String, theory : List Expr, steps : List Step }
     -> ( Model, Cmd Msg )
 updateEx msg ex =
     case msg of
@@ -285,7 +285,7 @@ view m =
             , body =
                 [ div [ class "exercise-ui" ]
                     [ div [ class "exercise-content", id "exercise-content" ]
-                        [ theory ex.theory
+                        [ theory ex.descr ex.theory ex.goal
                         , theSteps ex.steps
                         , parseError ex.error_msg
                         ]
@@ -419,9 +419,16 @@ deductionSymbol =
     node "math" [] [ node "mrow" [] [ node "mo" [] [ text "⊢" ] ] ]
 
 
-theory : List Expr -> Html Msg
-theory lst =
-    div [ class "theory" ] (h3 [] [ text "Teoría:" ] :: List.map theoryItem lst)
+theory : String -> List Expr -> Expr -> Html Msg
+theory descr lst goal =
+    div [ class "theory" ]
+        (h3 [] [ text "Teoría:" ]
+            :: p [ id "theory-description" ] [ text descr ]
+            :: List.map theoryItem lst
+            ++ [ h3 [] [ text "Objetivo:" ]
+               , theoryItem goal
+               ]
+        )
 
 
 theoryItem : Expr -> Html Msg

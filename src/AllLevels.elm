@@ -17,6 +17,8 @@ levels =
             [ And (Ident "p") (Ident "q" |> Neg)
             , Implies (Ident "q" |> Neg) (Ident "r")
             ]
+      , goal = Ident "r"
+      , descr = "El objetivo de este nivel es que aprendas a usar la interfaz. Abajo te encontrarás la ENTRADA, ahí vas a escribir tus deducciones tal como lo harías en un mensaje de Whatsapp. Para escribir conjunciones debes usar usar el operador &, para escribir disyunciones el operador |, para implicaciones y doble implicaciones -> y <-> respectivamente. También puedes usar paréntesis. Cuando termines de escribir tu fórmula presiona (+), si es correcta y hay alguna regla de inferencia que lo justifique se añadirá a los pasos. Intenta escribir 'p&-q'. Notarás que también está el botón (T), eso sirve para asumir cosas en tu teoría (T,A |- P), si quieres dejar de asumir en la teoría simplemente deja vacía la ENTRADA y presiona (T). Intenta resolver este nivel sencillo!"
       , approx_steps = 3
       }
     ]
@@ -31,6 +33,8 @@ update msg model =
                 , error_msg = Nothing
                 , theory = lvl.theory
                 , steps = [ LevelTys.Assume Nothing ]
+                , goal = lvl.goal
+                , descr = lvl.descr
                 }
                 |> LevelModelV
             , Cmd.none
