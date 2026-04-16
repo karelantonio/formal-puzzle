@@ -8,8 +8,7 @@ import Dict
 import Expr exposing (..)
 import List exposing (head)
 import Match exposing (..)
-import Tuple
-import Utils exposing (indexed, listProduct)
+import Utils exposing (listProduct)
 
 
 {-| A transformation
@@ -98,61 +97,58 @@ tryFromMonotony lst ex =
 
 {-| Try to infer from replacement
 -}
-tryFromReplacement : List { number : Int, ex : Expr } -> Expr -> Maybe { ref : Int, which : Int }
+tryFromReplacement : List { number : Int, ex : Expr } -> Expr -> Maybe { ref : Int, name : String }
 tryFromReplacement exs new =
-    case List.filterMap (tryFromReplacementFilter new) exs of
-        hd :: _ ->
-            Just hd
-
-        [] ->
-            Nothing
+    List.filterMap (tryFromReplacementFilter new) exs |> List.head
 
 
-tryFromReplacementFilter : Expr -> { number : Int, ex : Expr } -> Maybe { which : Int, ref : Int }
+tryFromReplacementFilter : Expr -> { number : Int, ex : Expr } -> Maybe { name : String, ref : Int }
 tryFromReplacementFilter res { number, ex } =
     case
-        List.filterMap (tryFromReplacementFilterCheck res ex) (List.indexedMap Tuple.pair allEquivalences)
+        List.filterMap
+            (tryFromReplacementFilterCheck res ex)
+            allEquivalences
     of
         equiv :: _ ->
-            Just { which = equiv, ref = number }
+            Just { name = equiv, ref = number }
 
         [] ->
             Nothing
 
 
-tryFromReplacementFilterCheck : Expr -> Expr -> ( Int, ( Expr, Expr ) ) -> Maybe Int
-tryFromReplacementFilterCheck res ex ( i, ( p1, p2 ) ) =
+tryFromReplacementFilterCheck : Expr -> Expr -> ( String, Expr, Expr ) -> Maybe String
+tryFromReplacementFilterCheck res ex ( name, p1, p2 ) =
     if wasApplied (Replacement p1 p2) ex res then
-        Just i
+        Just name
 
     else
         Nothing
 
 
-tryFromImplication : List { number : Int, ex : Expr } -> Expr -> Maybe { what : Int, ref : Int }
+tryFromImplication : List { number : Int, ex : Expr } -> Expr -> Maybe { name : String, ref : Int }
 tryFromImplication lst res =
     case List.filterMap (tryFromImplicationFilter res) (List.map (\e -> ( e.number, e.ex )) lst) of
-        { impl, ref } :: _ ->
-            Just { what = impl, ref = ref }
+        { implName, ref } :: _ ->
+            Just { name = implName, ref = ref }
 
         [] ->
             Nothing
 
 
-tryFromImplicationFilter : Expr -> ( Int, Expr ) -> Maybe { impl : Int, ref : Int }
+tryFromImplicationFilter : Expr -> ( Int, Expr ) -> Maybe { implName : String, ref : Int }
 tryFromImplicationFilter res ( r, other ) =
-    case List.filterMap (tryFromImplicationCheck res other) (List.indexedMap Tuple.pair allImplications) of
+    case List.filterMap (tryFromImplicationCheck res other) allImplications of
         i :: _ ->
-            Just { impl = i, ref = r }
+            Just { implName = i, ref = r }
 
         [] ->
             Nothing
 
 
-tryFromImplicationCheck : Expr -> Expr -> ( Int, ( Expr, Expr ) ) -> Maybe Int
-tryFromImplicationCheck res other ( i, ( p1, p2 ) ) =
+tryFromImplicationCheck : Expr -> Expr -> ( String, Expr, Expr ) -> Maybe String
+tryFromImplicationCheck res other ( name, p1, p2 ) =
     if wasApplied (LogicalImplication p1 p2) other res then
-        Just i
+        Just name
 
     else
         Nothing
@@ -163,7 +159,7 @@ type InferenceRefs
     | Two Int Int
 
 
-tryFromInferenceRule : List { number : Int, assum : Maybe Expr, what : Expr } -> Maybe Expr -> Expr -> Maybe { refs : InferenceRefs, number : Int }
+tryFromInferenceRule : List { number : Int, assum : Maybe Expr, what : Expr } -> Maybe Expr -> Expr -> Maybe { refs : InferenceRefs, name : String }
 tryFromInferenceRule steps hyp res =
     case hyp of
         Just val ->
@@ -178,16 +174,16 @@ tryFromInferenceRule steps hyp res =
                     tryFromInferenceRuleNonAssuming steps Nothing res
 
 
-tryFromInferenceRuleAssuming : List { number : Int, assum : Maybe Expr, what : Expr } -> Expr -> Maybe { refs : InferenceRefs, number : Int }
+tryFromInferenceRuleAssuming : List { number : Int, assum : Maybe Expr, what : Expr } -> Expr -> Maybe { refs : InferenceRefs, name : String }
 tryFromInferenceRuleAssuming lst ex =
     List.filterMap
         (tryFromInferenceRuleAssumingCheck ex)
-        (listProduct lst (indexed AllRules.allInferenceRulesAssuming))
+        (listProduct lst AllRules.allInferenceRulesAssuming)
         |> List.head
 
 
-tryFromInferenceRuleAssumingCheck : Expr -> ( { number : Int, assum : Maybe Expr, what : Expr }, ( Int, { assum : Expr, what : Expr, thesis : Expr } ) ) -> Maybe { number : Int, refs : InferenceRefs }
-tryFromInferenceRuleAssumingCheck ex ( oex, ( num, rule ) ) =
+tryFromInferenceRuleAssumingCheck : Expr -> ( { number : Int, assum : Maybe Expr, what : Expr }, { name : String, assum : Expr, what : Expr, thesis : Expr } ) -> Maybe { name : String, refs : InferenceRefs }
+tryFromInferenceRuleAssumingCheck ex ( oex, rule ) =
     case oex.assum of
         Just assum ->
             tryMatch assum rule.assum Dict.empty
@@ -197,7 +193,7 @@ tryFromInferenceRuleAssumingCheck ex ( oex, ( num, rule ) ) =
                 |> Maybe.andThen
                     (\e ->
                         if e == ex then
-                            Just { number = num, refs = One oex.number }
+                            Just { name = rule.name, refs = One oex.number }
 
                         else
                             Nothing
@@ -207,7 +203,7 @@ tryFromInferenceRuleAssumingCheck ex ( oex, ( num, rule ) ) =
             Nothing
 
 
-tryFromInferenceRuleNonAssuming : List { number : Int, assum : Maybe Expr, what : Expr } -> Maybe Expr -> Expr -> Maybe { refs : InferenceRefs, number : Int }
+tryFromInferenceRuleNonAssuming : List { number : Int, assum : Maybe Expr, what : Expr } -> Maybe Expr -> Expr -> Maybe { refs : InferenceRefs, name : String }
 tryFromInferenceRuleNonAssuming lst ass ex =
     -- Filter by the same theory
     let
@@ -217,7 +213,7 @@ tryFromInferenceRuleNonAssuming lst ass ex =
     case
         List.filterMap
             (tryFromInferenceFilterMatch1 ex)
-            (listProduct theo (indexed allInferenceRulesOne))
+            (listProduct theo allInferenceRulesOne)
             |> head
     of
         Just v ->
@@ -226,7 +222,7 @@ tryFromInferenceRuleNonAssuming lst ass ex =
         Nothing ->
             List.filterMap
                 (tryFromInferenceFilterMatch2 ex)
-                (listProduct theo (listProduct theo (indexed AllRules.allInferenceRulesTwo)))
+                (listProduct theo (listProduct theo AllRules.allInferenceRulesTwo))
                 |> head
 
 
@@ -241,16 +237,16 @@ tryFromInferenceFilterSameTheory orig e =
 
 tryFromInferenceFilterMatch1 :
     Expr
-    -> ( { number : Int, what : Expr }, ( Int, { what : Expr, thesis : Expr } ) )
-    -> Maybe { refs : InferenceRefs, number : Int }
-tryFromInferenceFilterMatch1 ex ( oex, ( idx, pat ) ) =
+    -> ( { number : Int, what : Expr }, { name : String, what : Expr, thesis : Expr } )
+    -> Maybe { refs : InferenceRefs, name : String }
+tryFromInferenceFilterMatch1 ex ( oex, pat ) =
     tryMatch oex.what pat.what Dict.empty
         |> Maybe.andThen (tryMatch ex pat.thesis)
         |> Maybe.andThen (replaceAll pat.thesis)
         |> Maybe.andThen
             (\e ->
                 if e == ex then
-                    Just { number = idx, refs = One oex.number }
+                    Just { name = pat.name, refs = One oex.number }
 
                 else
                     Nothing
@@ -259,9 +255,9 @@ tryFromInferenceFilterMatch1 ex ( oex, ( idx, pat ) ) =
 
 tryFromInferenceFilterMatch2 :
     Expr
-    -> ( { number : Int, what : Expr }, ( { number : Int, what : Expr }, ( Int, { what1 : Expr, what2 : Expr, thesis : Expr } ) ) )
-    -> Maybe { refs : InferenceRefs, number : Int }
-tryFromInferenceFilterMatch2 ex ( e1, ( e2, ( i, pat ) ) ) =
+    -> ( { number : Int, what : Expr }, ( { number : Int, what : Expr }, { name : String, what1 : Expr, what2 : Expr, thesis : Expr } ) )
+    -> Maybe { refs : InferenceRefs, name : String }
+tryFromInferenceFilterMatch2 ex ( e1, ( e2, pat ) ) =
     tryMatch e1.what pat.what1 Dict.empty
         |> Maybe.andThen (tryMatch e2.what pat.what2)
         |> Maybe.andThen (tryMatch ex pat.thesis)
@@ -269,7 +265,7 @@ tryFromInferenceFilterMatch2 ex ( e1, ( e2, ( i, pat ) ) ) =
         |> Maybe.andThen
             (\e ->
                 if e == ex then
-                    Just { number = i, refs = Two e1.number e2.number }
+                    Just { name = pat.name, refs = Two e1.number e2.number }
 
                 else
                     Nothing

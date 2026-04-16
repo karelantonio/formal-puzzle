@@ -6,10 +6,10 @@ import Expr exposing (Expr)
 type Reason
     = Monotony Int
     | Hypotesis
-    | Equivalence { number : Int, ref : Int }
-    | Implication { number : Int, ref : Int }
-    | InferenceRule1 { number : Int, ref1 : Int }
-    | InferenceRule2 { number : Int, ref1 : Int, ref2 : Int }
+    | Equivalence { name : String, ref : Int }
+    | Implication { name : String, ref : Int }
+    | InferenceRule1 { name : String, ref1 : Int }
+    | InferenceRule2 { name : String, ref1 : Int, ref2 : Int }
 
 
 type Step

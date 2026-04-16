@@ -169,20 +169,14 @@ tryToInferMonotFilterDeduction step =
 
 tryToInferRepl : List { number : Int, ex : Expr } -> Expr -> Maybe Reason
 tryToInferRepl itms ex =
-    let
-        res =
-            Infer.tryFromReplacement itms ex
-    in
-    Maybe.andThen
-        (\rres ->
-            Just (Equivalence { ref = rres.ref, number = rres.which + 1 })
-        )
-        res
+    Infer.tryFromReplacement itms ex
+        |> Maybe.map Equivalence
 
 
 tryToInferImpl : List { number : Int, ex : Expr } -> Expr -> Maybe Reason
 tryToInferImpl lst ex =
-    Infer.tryFromImplication lst ex |> Maybe.map (\e -> Implication { number = e.what, ref = e.ref })
+    Infer.tryFromImplication lst ex
+        |> Maybe.map Implication
 
 
 tryToInferRule : List Step -> Expr -> Maybe Reason
@@ -192,10 +186,10 @@ tryToInferRule lst ex =
             (\e ->
                 case e.refs of
                     Infer.One ref ->
-                        InferenceRule1 { number = e.number + 1, ref1 = ref }
+                        InferenceRule1 { name = e.name, ref1 = ref }
 
                     Infer.Two ref1 ref2 ->
-                        InferenceRule2 { number = e.number + 1, ref1 = ref1, ref2 = ref2 }
+                        InferenceRule2 { name = e.name, ref1 = ref1, ref2 = ref2 }
             )
 
 
@@ -402,16 +396,16 @@ reasonToString reason =
             "Monot:" ++ String.fromInt ref
 
         Equivalence args ->
-            "E" ++ String.fromInt args.number ++ ":" ++ String.fromInt args.ref
+            args.name ++ ":" ++ String.fromInt args.ref
 
         Implication args ->
-            "I" ++ String.fromInt args.number ++ ":" ++ String.fromInt args.ref
+            args.name ++ ":" ++ String.fromInt args.ref
 
         InferenceRule1 args ->
-            "R" ++ String.fromInt args.number ++ ":" ++ String.fromInt args.ref1
+            args.name ++ ":" ++ String.fromInt args.ref1
 
         InferenceRule2 args ->
-            "R" ++ String.fromInt args.number ++ ":" ++ String.fromInt args.ref1 ++ "," ++ String.fromInt args.ref2
+            args.name ++ ":" ++ String.fromInt args.ref1 ++ "," ++ String.fromInt args.ref2
 
 
 deductionSymbol : Html Msg
