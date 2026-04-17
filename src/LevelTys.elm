@@ -1,6 +1,6 @@
 module LevelTys exposing (..)
 
-import Expr exposing (Expr)
+import Expr.Types exposing (Expr(..))
 import Set exposing (Set)
 
 

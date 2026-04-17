@@ -1,7 +1,7 @@
 module Match exposing (replaceAll, tryMatch)
 
 import Dict exposing (Dict)
-import Expr exposing (..)
+import Expr.Types exposing (Expr(..))
 
 
 {-| Matching patterns against expressions, the first argument is the
@@ -10,28 +10,28 @@ expression and the second is the pattern
 tryMatch : Expr -> Expr -> Dict String Expr -> Maybe (Dict String Expr)
 tryMatch ex pat dik =
     case ( ex, pat ) of
-        ( Expr.One, Expr.One ) ->
+        ( One, One ) ->
             Just dik
 
-        ( Expr.Zero, Expr.Zero ) ->
+        ( Zero, Zero ) ->
             Just dik
 
-        ( Expr.Neg a, Expr.Neg b ) ->
+        ( Neg a, Neg b ) ->
             tryMatch a b dik
 
-        ( Expr.And l1 r1, Expr.And l2 r2 ) ->
+        ( And l1 r1, And l2 r2 ) ->
             tryMatch l1 l2 dik |> Maybe.andThen (\d -> tryMatch r1 r2 d)
 
-        ( Expr.Or l1 r1, Expr.Or l2 r2 ) ->
+        ( Or l1 r1, Or l2 r2 ) ->
             tryMatch l1 l2 dik |> Maybe.andThen (\d -> tryMatch r1 r2 d)
 
-        ( Expr.Implies l1 r1, Expr.Implies l2 r2 ) ->
+        ( Implies l1 r1, Implies l2 r2 ) ->
             tryMatch l1 l2 dik |> Maybe.andThen (\d -> tryMatch r1 r2 d)
 
-        ( Expr.Iff l1 r1, Expr.Iff l2 r2 ) ->
+        ( Iff l1 r1, Iff l2 r2 ) ->
             tryMatch l1 l2 dik |> Maybe.andThen (\d -> tryMatch r1 r2 d)
 
-        ( ex2, Expr.Ident name ) ->
+        ( ex2, Ident name ) ->
             case Dict.get name dik of
                 Just v ->
                     if v == ex2 then
@@ -52,7 +52,7 @@ tryMatch ex pat dik =
 replaceAll : Expr -> Dict String Expr -> Maybe Expr
 replaceAll ex dik =
     case ex of
-        Expr.Ident name ->
+        Ident name ->
             Dict.get name dik
 
         One ->

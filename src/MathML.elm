@@ -3,7 +3,8 @@ module MathML exposing (exprToMathML, exprToMathMLTag)
 {-| Convert expressions to mathml tags
 -}
 
-import Expr exposing (..)
+import Expr.Types exposing (Expr(..))
+import Expr.Utils exposing (isSimple)
 import Html exposing (Html, node, text)
 
 

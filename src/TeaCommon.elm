@@ -1,6 +1,6 @@
 module TeaCommon exposing (..)
 
-import Expr exposing (Expr)
+import Expr.Types exposing (Expr(..))
 import LevelTys
 
 

@@ -1,7 +1,9 @@
 module Level exposing (..)
 
 import Browser exposing (..)
-import Expr exposing (..)
+import Expr.Parser exposing (parse)
+import Expr.Types exposing (Expr(..))
+import Expr.Utils exposing (toString)
 import Html exposing (Html, div, form, h3, input, node, p, table, tbody, td, text, tr)
 import Html.Attributes exposing (class, colspan, id, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
@@ -283,10 +285,10 @@ tryToInferRule lst ex =
         |> Maybe.map
             (\e ->
                 case e.refs of
-                    Infer.One ref ->
+                    Infer.OneRef ref ->
                         InferenceRule1 { name = e.name, ref1 = ref }
 
-                    Infer.Two ref1 ref2 ->
+                    Infer.TwoRefs ref1 ref2 ->
                         InferenceRule2 { name = e.name, ref1 = ref1, ref2 = ref2 }
             )
 

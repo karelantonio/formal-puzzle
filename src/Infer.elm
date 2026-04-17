@@ -5,7 +5,7 @@ module Infer exposing (InferenceRefs(..), Transformation(..), tryFromHypothesis,
 
 import AllRules exposing (..)
 import Dict
-import Expr exposing (..)
+import Expr.Types exposing (Expr(..))
 import List exposing (head)
 import Match exposing (..)
 import Utils exposing (listProduct)
@@ -38,10 +38,10 @@ wasAppliedRepl ( p1, p2 ) ( e1, e2 ) =
 
     else
         case ( e1, e2 ) of
-            ( Expr.One, Expr.One ) ->
+            ( One, One ) ->
                 False
 
-            ( Expr.Zero, Expr.Zero ) ->
+            ( Zero, Zero ) ->
                 False
 
             ( Ident _, Ident _ ) ->
@@ -155,8 +155,8 @@ tryFromImplicationCheck res other ( name, p1, p2 ) =
 
 
 type InferenceRefs
-    = One Int
-    | Two Int Int
+    = OneRef Int
+    | TwoRefs Int Int
 
 
 tryFromInferenceRule : List { number : Int, assum : Maybe Expr, what : Expr } -> Maybe Expr -> Expr -> Maybe { refs : InferenceRefs, name : String }
@@ -193,7 +193,7 @@ tryFromInferenceRuleAssumingCheck ex ( oex, rule ) =
                 |> Maybe.andThen
                     (\e ->
                         if e == ex then
-                            Just { name = rule.name, refs = One oex.number }
+                            Just { name = rule.name, refs = OneRef oex.number }
 
                         else
                             Nothing
@@ -246,7 +246,7 @@ tryFromInferenceFilterMatch1 ex ( oex, pat ) =
         |> Maybe.andThen
             (\e ->
                 if e == ex then
-                    Just { name = pat.name, refs = One oex.number }
+                    Just { name = pat.name, refs = OneRef oex.number }
 
                 else
                     Nothing
@@ -265,7 +265,7 @@ tryFromInferenceFilterMatch2 ex ( e1, ( e2, pat ) ) =
         |> Maybe.andThen
             (\e ->
                 if e == ex then
-                    Just { name = pat.name, refs = Two e1.number e2.number }
+                    Just { name = pat.name, refs = TwoRefs e1.number e2.number }
 
                 else
                     Nothing

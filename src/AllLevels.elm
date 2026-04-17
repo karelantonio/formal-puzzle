@@ -1,7 +1,7 @@
 module AllLevels exposing (..)
 
 import Browser exposing (Document)
-import Expr exposing (..)
+import Expr.Types exposing (Expr(..))
 import Html exposing (Html, div, h2, h4, p, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
@@ -31,7 +31,7 @@ levels =
 
 
 update : AllLevelsMsg -> AllLevelsModel -> ( Model, Cmd Msg )
-update msg model =
+update msg _ =
     case msg of
         LevelClicked lvl ->
             ( LevelTys.Ex
