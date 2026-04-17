@@ -1,6 +1,7 @@
-module Expr.Utils exposing (isSimple, parToString, toString)
+module Expr.Utils exposing (extractAllKnownPropositions, isSimple, parToString, toString)
 
 import Expr.Types exposing (..)
+import Set exposing (Set)
 
 
 {-| Check if an expression is simple
@@ -72,3 +73,40 @@ parToString expr =
 
     else
         "(" ++ toString expr ++ ")"
+
+
+
+-- Extract known propositions
+
+
+extractAllKnownPropositions : List Expr -> Set String
+extractAllKnownPropositions lst =
+    List.foldl extractKnownPropositions Set.empty lst
+
+
+extractKnownPropositions : Expr -> Set String -> Set String
+extractKnownPropositions ex st =
+    case ex of
+        One ->
+            st
+
+        Zero ->
+            st
+
+        Ident x ->
+            Set.insert x st
+
+        Neg e ->
+            extractKnownPropositions e st
+
+        And l r ->
+            extractKnownPropositions l st |> extractKnownPropositions r
+
+        Or l r ->
+            extractKnownPropositions l st |> extractKnownPropositions r
+
+        Implies l r ->
+            extractKnownPropositions l st |> extractKnownPropositions r
+
+        Iff l r ->
+            extractKnownPropositions l st |> extractKnownPropositions r

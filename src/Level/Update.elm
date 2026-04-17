@@ -1,87 +1,72 @@
-module Level exposing (..)
+module Level.Update exposing (update)
 
-import Browser exposing (..)
 import Expr.Parser exposing (parse)
 import Expr.Types exposing (Expr(..))
 import Expr.Utils exposing (toString)
-import Html exposing (Html, div, form, h3, input, node, p, table, tbody, td, text, tr)
-import Html.Attributes exposing (class, colspan, id, placeholder, type_, value)
-import Html.Events exposing (onClick, onInput, onSubmit)
-import Infer exposing (Transformation(..))
-import LevelTys exposing (..)
-import MathML exposing (exprToMathML)
+import Infer
+import Level.Types exposing (..)
 import Set exposing (Set)
-import TeaCommon exposing (..)
 import Utils
 
 
-
--- The message
--- Update the view
-
-
-update : LevelMsg -> LevelModel -> ( Model, Cmd Msg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case model of
         Ex ex ->
             updateEx msg ex
 
 
-updateEx :
-    LevelMsg
-    -> LevelModelEx
-    -> ( Model, Cmd Msg )
+updateEx : Msg -> ExT -> ( Model, Cmd Msg )
 updateEx msg ex =
     case msg of
         DeductionTextChanged txt ->
-            ( Ex { ex | ded_text = txt, error_msg = Nothing } |> LevelModelV, Cmd.none )
+            ( Ex { ex | ded_text = txt, error_msg = Nothing }, Cmd.none )
 
         AddPressed ->
             case parse ex.ded_text of
                 Ok parsed_ex ->
-                    updateHandleParsedAllKnown ex parsed_ex
+                    updateHandleParsed ex parsed_ex
 
                 Err err ->
                     ( Ex
                         { ex
                             | error_msg = err.msg ++ " (Posición: " ++ String.fromInt (err.location + 1) ++ ")" |> Just
                         }
-                        |> LevelModelV
                     , Utils.scrollToBottom "exercise-ui"
                     )
 
         TheoryPressed ->
             if String.isEmpty ex.ded_text then
-                ( Ex { ex | steps = addAssumeToSteps Nothing ex.steps } |> LevelModelV, Cmd.none )
+                ( Ex { ex | steps = addAssumeToSteps Nothing ex.steps }, Cmd.none )
 
             else
                 case parse ex.ded_text of
                     Ok parsed_ex ->
                         case checkOnlyKnownPropositions ex.known_props parsed_ex of
                             Ok checked_ex ->
-                                ( Ex { ex | steps = addAssumeToSteps (Just checked_ex) ex.steps } |> LevelModelV, Cmd.none )
+                                ( Ex { ex | steps = addAssumeToSteps (Just checked_ex) ex.steps }, Cmd.none )
 
                             Err err ->
-                                ( Ex { ex | error_msg = err |> Just } |> LevelModelV, Cmd.none )
+                                ( Ex { ex | error_msg = err |> Just }, Cmd.none )
 
                     Err err ->
-                        ( Ex { ex | error_msg = err.msg ++ " (Posición: " ++ String.fromInt err.location ++ ")" |> Just } |> LevelModelV, Cmd.none )
+                        ( Ex { ex | error_msg = err.msg ++ " (Posición: " ++ String.fromInt err.location ++ ")" |> Just }, Cmd.none )
 
         ExprPressed what ->
-            ( Ex { ex | ded_text = toString what, error_msg = Nothing } |> LevelModelV, Cmd.none )
+            ( Ex { ex | ded_text = toString what, error_msg = Nothing }, Cmd.none )
 
 
-updateHandleParsed : LevelModelEx -> Expr -> ( Model, Cmd Msg )
+updateHandleParsed : ExT -> Expr -> ( Model, Cmd Msg )
 updateHandleParsed ex parsed_ex =
     case checkOnlyKnownPropositions ex.known_props parsed_ex of
         Ok p ->
             updateHandleParsedAllKnown ex p
 
         Err e ->
-            ( Ex { ex | error_msg = Just e } |> LevelModelV, Cmd.none )
+            ( Ex { ex | error_msg = Just e }, Cmd.none )
 
 
-updateHandleParsedAllKnown : LevelModelEx -> Expr -> ( Model, Cmd Msg )
+updateHandleParsedAllKnown : ExT -> Expr -> ( Model, Cmd Msg )
 updateHandleParsedAllKnown ex parsed_ex =
     case tryToInferDed { theory = ex.theory, steps = ex.steps } parsed_ex of
         Just ded ->
@@ -90,7 +75,6 @@ updateHandleParsedAllKnown ex parsed_ex =
                     | ded_text = ""
                     , steps = ded :: ex.steps
                 }
-                |> LevelModelV
             , Utils.scrollToBottom "exercise-content"
             )
 
@@ -99,7 +83,6 @@ updateHandleParsedAllKnown ex parsed_ex =
                 { ex
                     | error_msg = Just "Al parecer no hay regla de inferencia, equivalencia lógica, implicación lógica, monotonía o hipótesis que justifique eso"
                 }
-                |> LevelModelV
             , Utils.scrollToBottom "exercise-ui"
             )
 
@@ -138,43 +121,6 @@ checkOnlyKnownPropositions thry ex =
 
         Iff l r ->
             Result.map2 (\_ _ -> ex) (checkOnlyKnownPropositions thry l) (checkOnlyKnownPropositions thry r)
-
-
-
--- Extract known propositions
-
-
-extractAllKnownPropositions : List Expr -> Set String
-extractAllKnownPropositions lst =
-    List.foldl extractKnownPropositions Set.empty lst
-
-
-extractKnownPropositions : Expr -> Set String -> Set String
-extractKnownPropositions ex st =
-    case ex of
-        One ->
-            st
-
-        Zero ->
-            st
-
-        Ident x ->
-            Set.insert x st
-
-        Neg e ->
-            extractKnownPropositions e st
-
-        And l r ->
-            extractKnownPropositions l st |> extractKnownPropositions r
-
-        Or l r ->
-            extractKnownPropositions l st |> extractKnownPropositions r
-
-        Implies l r ->
-            extractKnownPropositions l st |> extractKnownPropositions r
-
-        Iff l r ->
-            extractKnownPropositions l st |> extractKnownPropositions r
 
 
 
@@ -365,166 +311,3 @@ currNumber lst =
 
         [] ->
             Nothing
-
-
-
--- The view
-
-
-view : LevelModel -> Document Msg
-view m =
-    case m of
-        Ex ex ->
-            { title = "Ejercicio"
-            , body =
-                [ div [ class "exercise-ui" ]
-                    [ div [ class "exercise-content", id "exercise-content" ]
-                        [ theory ex.descr ex.theory ex.goal
-                        , theSteps ex.steps
-                        , parseError ex.error_msg
-                        ]
-                    , bottomBar ex.ded_text
-                    ]
-                ]
-            }
-
-
-bottomBar : String -> Html Msg
-bottomBar dedtext =
-    div
-        [ class "exercise-bottom-bar" ]
-        [ form [ onSubmit (AddPressed |> LevelMsgV) ]
-            [ input
-                [ placeholder "Escribe la deducción aquí"
-                , value dedtext
-                , onInput (\t -> DeductionTextChanged t |> LevelMsgV)
-                , class "exercise-bottom-bar-input"
-                , type_ "text"
-                ]
-                []
-            , input
-                [ type_ "button"
-                , class "exercise-bottom-bar-btn"
-                , onClick (AddPressed |> LevelMsgV)
-                , value "+"
-                ]
-                []
-            , input
-                [ type_ "button"
-                , class "exercise-bottom-bar-btn"
-                , onClick (TheoryPressed |> LevelMsgV)
-                , value "T"
-                ]
-                []
-            ]
-        ]
-
-
-parseError : Maybe String -> Html Msg
-parseError err =
-    case err of
-        Just msg ->
-            div [ class "exercise-parse-err" ] [ div [] [ text msg ] ]
-
-        Nothing ->
-            div [ class "exercise-parse-err" ] []
-
-
-theSteps : List Step -> Html Msg
-theSteps steps =
-    div [ class "exercise-ui-steps" ]
-        [ table [] [ tbody [] (List.map step2html steps |> List.reverse) ] ]
-
-
-step2html : Step -> Html Msg
-step2html step =
-    case step of
-        Assume a ->
-            step2htmlAssume a
-
-        Deduction ded ->
-            step2htmlDeduction ded
-
-
-step2htmlAssume : Maybe Expr -> Html Msg
-step2htmlAssume maex =
-    case maex of
-        Just what ->
-            tr [ class "exercise-step-deduction" ]
-                [ td []
-                    [ div [ class "clickable", onClick (ExprPressed what |> LevelMsgV) ]
-                        [ text "T,"
-                        , exprToMathML what
-                        ]
-                    ]
-                , td [] [ deductionSymbol ]
-                , td [ colspan 3, class "exercise-step-deduction-expression exercise-step-deduction-nothing" ] [ text "(Nada todavía, haz tus deducciones)" ]
-                ]
-
-        Nothing ->
-            tr [ class "exercise-step-deduction" ]
-                [ td []
-                    [ text "T"
-                    ]
-                , td [] [ deductionSymbol ]
-                , td [ colspan 3, class "exercise-step-deduction-expression exercise-step-deduction-nothing" ] [ text "(Nada todavía, haz tus deducciones)" ]
-                ]
-
-
-step2htmlDeduction : { assumed : Maybe Expr, num : Int, what : Expr, reason : Reason } -> Html Msg
-step2htmlDeduction ded =
-    tr [ class "exercise-step-deduction" ]
-        [ td [] []
-        , td [ class "exercise-step-deduction-symbol" ]
-            [ deductionSymbol ]
-        , td [ onClick (ExprPressed ded.what |> LevelMsgV), class "exercise-step-deduction-expression clickable" ]
-            [ exprToMathML ded.what ]
-        , td [ class "exercise-step-deduction-reason" ]
-            [ text (reasonToString ded.reason) ]
-        , td [ class "exercise-step-deduction-stepnum" ]
-            [ text ("(" ++ String.fromInt ded.num ++ ")") ]
-        ]
-
-
-reasonToString : Reason -> String
-reasonToString reason =
-    case reason of
-        Hypotesis ->
-            "Hip"
-
-        Monotony ref ->
-            "Monot:" ++ String.fromInt ref
-
-        Equivalence args ->
-            args.name ++ ":" ++ String.fromInt args.ref
-
-        Implication args ->
-            args.name ++ ":" ++ String.fromInt args.ref
-
-        InferenceRule1 args ->
-            args.name ++ ":" ++ String.fromInt args.ref1
-
-        InferenceRule2 args ->
-            args.name ++ ":" ++ String.fromInt args.ref1 ++ "," ++ String.fromInt args.ref2
-
-
-deductionSymbol : Html Msg
-deductionSymbol =
-    node "math" [] [ node "mrow" [] [ node "mo" [] [ text "⊢" ] ] ]
-
-
-theory : String -> List Expr -> Expr -> Html Msg
-theory descr lst goal =
-    div [ class "theory" ]
-        (h3 [] [ text "Teoría:" ]
-            :: p [ id "theory-description" ] [ text descr ]
-            :: List.map theoryItem lst
-            ++ [ h3 [] [ text "Objetivo:" ]
-               , theoryItem goal
-               ]
-        )
-
-
-theoryItem : Expr -> Html Msg
-theoryItem ex =
-    div [ class "theory-item clickable", onClick (ExprPressed ex |> LevelMsgV) ] [ MathML.exprToMathML ex ]

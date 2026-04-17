@@ -1,9 +1,31 @@
 module Main exposing (..)
 
-import AllLevels
+import AllLevels.Types
+import AllLevels.Update
+import AllLevels.View
 import Browser exposing (Document, document)
-import Level
-import TeaCommon exposing (..)
+import Html
+import Level.Types
+import Level.Update
+import Level.View
+
+
+
+-- Messages
+
+
+type Msg
+    = AllLevelsMsgV AllLevels.Types.Msg
+    | LevelMsgV Level.Types.Msg
+
+
+
+-- Models
+
+
+type Model
+    = AllLevelsModelV AllLevels.Types.Model
+    | LevelModelV Level.Types.Model
 
 
 
@@ -12,7 +34,7 @@ import TeaCommon exposing (..)
 
 init : flags -> ( Model, Cmd Msg )
 init _ =
-    ( AllLevelsModelV AllLevelsModel, Cmd.none )
+    ( AllLevelsModelV AllLevels.Types.Model, Cmd.none )
 
 
 
@@ -23,10 +45,19 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( model, msg ) of
         ( LevelModelV lvlmod, LevelMsgV lvlmsg ) ->
-            Level.update lvlmsg lvlmod
+            Level.Update.update lvlmsg lvlmod |> Tuple.mapBoth LevelModelV (Cmd.map LevelMsgV)
 
         ( AllLevelsModelV alvlmod, AllLevelsMsgV alvlmsg ) ->
-            AllLevels.update alvlmsg alvlmod
+            let
+                ans =
+                    AllLevels.Update.update alvlmsg alvlmod
+            in
+            case ans of
+                ( AllLevels.Types.ChangeToLevel lvl, _ ) ->
+                    ( LevelModelV lvl, Cmd.none )
+
+                other ->
+                    Tuple.mapBoth AllLevelsModelV (Cmd.map AllLevelsMsgV) other
 
         _ ->
             ( model, Cmd.none )
@@ -40,10 +71,15 @@ view : Model -> Document Msg
 view model =
     case model of
         LevelModelV lvlmod ->
-            Level.view lvlmod
+            Level.View.view lvlmod |> mapDoc LevelMsgV
 
         AllLevelsModelV alvlmod ->
-            AllLevels.view alvlmod
+            AllLevels.View.view alvlmod |> mapDoc AllLevelsMsgV
+
+
+mapDoc : (a -> b) -> Document a -> Document b
+mapDoc fn doc =
+    { title = doc.title, body = List.map (Html.map fn) doc.body }
 
 
 

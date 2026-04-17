@@ -1,4 +1,4 @@
-module LevelTys exposing (..)
+module Level.Types exposing (..)
 
 import Expr.Types exposing (Expr(..))
 import Set exposing (Set)
@@ -18,7 +18,7 @@ type Step
     | Deduction { assumed : Maybe Expr, num : Int, what : Expr, reason : Reason }
 
 
-type alias LevelModelEx =
+type alias ExT =
     { descr : String
     , goal : Expr
     , ded_text : String
@@ -29,11 +29,11 @@ type alias LevelModelEx =
     }
 
 
-type LevelModel
-    = Ex LevelModelEx
+type Model
+    = Ex ExT
 
 
-type LevelMsg
+type Msg
     = DeductionTextChanged String
     | AddPressed
     | TheoryPressed
