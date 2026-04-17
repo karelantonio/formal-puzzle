@@ -8,6 +8,7 @@ import Html.Events exposing (onClick, onInput, onSubmit)
 import Infer exposing (Transformation(..))
 import LevelTys exposing (..)
 import MathML exposing (exprToMathML)
+import Set exposing (Set)
 import TeaCommon exposing (..)
 import Utils
 
@@ -26,7 +27,7 @@ update msg model =
 
 updateEx :
     LevelMsg
-    -> { descr : String, goal : Expr, ded_text : String, error_msg : Maybe String, theory : List Expr, steps : List Step }
+    -> LevelModelEx
     -> ( Model, Cmd Msg )
 updateEx msg ex =
     case msg of
@@ -36,25 +37,7 @@ updateEx msg ex =
         AddPressed ->
             case parse ex.ded_text of
                 Ok parsed_ex ->
-                    case tryToInferDed { theory = ex.theory, steps = ex.steps } parsed_ex of
-                        Just ded ->
-                            ( Ex
-                                { ex
-                                    | ded_text = ""
-                                    , steps = ded :: ex.steps
-                                }
-                                |> LevelModelV
-                            , Utils.scrollToBottom "exercise-content"
-                            )
-
-                        Nothing ->
-                            ( Ex
-                                { ex
-                                    | error_msg = Just "Al parecer no hay regla de inferencia, equivalencia lógica, implicación lógica, monotonía o hipótesis que justifique eso"
-                                }
-                                |> LevelModelV
-                            , Utils.scrollToBottom "exercise-ui"
-                            )
+                    updateHandleParsedAllKnown ex parsed_ex
 
                 Err err ->
                     ( Ex
@@ -72,13 +55,128 @@ updateEx msg ex =
             else
                 case parse ex.ded_text of
                     Ok parsed_ex ->
-                        ( Ex { ex | steps = addAssumeToSteps (Just parsed_ex) ex.steps } |> LevelModelV, Cmd.none )
+                        case checkOnlyKnownPropositions ex.known_props parsed_ex of
+                            Ok checked_ex ->
+                                ( Ex { ex | steps = addAssumeToSteps (Just checked_ex) ex.steps } |> LevelModelV, Cmd.none )
+
+                            Err err ->
+                                ( Ex { ex | error_msg = err |> Just } |> LevelModelV, Cmd.none )
 
                     Err err ->
                         ( Ex { ex | error_msg = err.msg ++ " (Posición: " ++ String.fromInt err.location ++ ")" |> Just } |> LevelModelV, Cmd.none )
 
         ExprPressed what ->
             ( Ex { ex | ded_text = toString what, error_msg = Nothing } |> LevelModelV, Cmd.none )
+
+
+updateHandleParsed : LevelModelEx -> Expr -> ( Model, Cmd Msg )
+updateHandleParsed ex parsed_ex =
+    case checkOnlyKnownPropositions ex.known_props parsed_ex of
+        Ok p ->
+            updateHandleParsedAllKnown ex p
+
+        Err e ->
+            ( Ex { ex | error_msg = Just e } |> LevelModelV, Cmd.none )
+
+
+updateHandleParsedAllKnown : LevelModelEx -> Expr -> ( Model, Cmd Msg )
+updateHandleParsedAllKnown ex parsed_ex =
+    case tryToInferDed { theory = ex.theory, steps = ex.steps } parsed_ex of
+        Just ded ->
+            ( Ex
+                { ex
+                    | ded_text = ""
+                    , steps = ded :: ex.steps
+                }
+                |> LevelModelV
+            , Utils.scrollToBottom "exercise-content"
+            )
+
+        Nothing ->
+            ( Ex
+                { ex
+                    | error_msg = Just "Al parecer no hay regla de inferencia, equivalencia lógica, implicación lógica, monotonía o hipótesis que justifique eso"
+                }
+                |> LevelModelV
+            , Utils.scrollToBottom "exercise-ui"
+            )
+
+
+
+-- Check if an expression uses unknown things
+
+
+checkOnlyKnownPropositions : Set String -> Expr -> Result String Expr
+checkOnlyKnownPropositions thry ex =
+    case ex of
+        One ->
+            Ok ex
+
+        Zero ->
+            Ok ex
+
+        Ident i ->
+            if Set.member i thry then
+                Ok ex
+
+            else
+                Err ("La proposición '" ++ i ++ "' no es conocida")
+
+        Neg e ->
+            checkOnlyKnownPropositions thry e |> Result.andThen (\_ -> Ok ex)
+
+        And l r ->
+            Result.map2 (\_ _ -> ex) (checkOnlyKnownPropositions thry l) (checkOnlyKnownPropositions thry r)
+
+        Or l r ->
+            Result.map2 (\_ _ -> ex) (checkOnlyKnownPropositions thry l) (checkOnlyKnownPropositions thry r)
+
+        Implies l r ->
+            Result.map2 (\_ _ -> ex) (checkOnlyKnownPropositions thry l) (checkOnlyKnownPropositions thry r)
+
+        Iff l r ->
+            Result.map2 (\_ _ -> ex) (checkOnlyKnownPropositions thry l) (checkOnlyKnownPropositions thry r)
+
+
+
+-- Extract known propositions
+
+
+extractAllKnownPropositions : List Expr -> Set String
+extractAllKnownPropositions lst =
+    List.foldl extractKnownPropositions Set.empty lst
+
+
+extractKnownPropositions : Expr -> Set String -> Set String
+extractKnownPropositions ex st =
+    case ex of
+        One ->
+            st
+
+        Zero ->
+            st
+
+        Ident x ->
+            Set.insert x st
+
+        Neg e ->
+            extractKnownPropositions e st
+
+        And l r ->
+            extractKnownPropositions l st |> extractKnownPropositions r
+
+        Or l r ->
+            extractKnownPropositions l st |> extractKnownPropositions r
+
+        Implies l r ->
+            extractKnownPropositions l st |> extractKnownPropositions r
+
+        Iff l r ->
+            extractKnownPropositions l st |> extractKnownPropositions r
+
+
+
+-- Add assume (T, A |-) to the list of steps, if required
 
 
 addAssumeToSteps : Maybe Expr -> List Step -> List Step

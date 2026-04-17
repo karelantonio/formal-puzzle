@@ -1,8 +1,6 @@
 port module Utils exposing (..)
 
 import Browser exposing (..)
-import Process exposing (sleep)
-import Task exposing (Task)
 
 
 indexed : List a -> List ( Int, a )

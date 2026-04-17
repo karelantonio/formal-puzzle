@@ -5,6 +5,7 @@ import Expr exposing (..)
 import Html exposing (Html, div, h2, h4, p, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
+import Level exposing (extractAllKnownPropositions)
 import LevelTys
 import TeaCommon exposing (..)
 
@@ -40,6 +41,7 @@ update msg model =
                 , steps = [ LevelTys.Assume Nothing ]
                 , goal = lvl.goal
                 , descr = lvl.descr
+                , known_props = extractAllKnownPropositions lvl.theory
                 }
                 |> LevelModelV
             , Cmd.none

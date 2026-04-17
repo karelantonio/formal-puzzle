@@ -1,6 +1,7 @@
 module LevelTys exposing (..)
 
 import Expr exposing (Expr)
+import Set exposing (Set)
 
 
 type Reason
@@ -17,8 +18,19 @@ type Step
     | Deduction { assumed : Maybe Expr, num : Int, what : Expr, reason : Reason }
 
 
+type alias LevelModelEx =
+    { descr : String
+    , goal : Expr
+    , ded_text : String
+    , error_msg : Maybe String
+    , theory : List Expr
+    , steps : List Step
+    , known_props : Set String
+    }
+
+
 type LevelModel
-    = Ex { descr : String, goal : Expr, ded_text : String, error_msg : Maybe String, theory : List Expr, steps : List Step }
+    = Ex LevelModelEx
 
 
 type LevelMsg
