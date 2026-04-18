@@ -5,7 +5,7 @@ import Expr.Types exposing (Expr(..))
 import Html exposing (Html, div, form, h3, input, node, p, table, tbody, td, text, tr)
 import Html.Attributes exposing (class, colspan, id, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
-import Infer exposing (Transformation(..))
+import Infer.Types exposing (Transformation(..))
 import Level.Types exposing (..)
 import MathML exposing (exprToMathML)
 

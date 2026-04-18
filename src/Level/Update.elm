@@ -3,7 +3,11 @@ module Level.Update exposing (update)
 import Expr.Parser exposing (parse)
 import Expr.Types exposing (Expr(..))
 import Expr.Utils exposing (toString)
-import Infer
+import Infer.Hypothesis
+import Infer.InferenceRule
+import Infer.Monotony
+import Infer.Transformation
+import Infer.Types exposing (InferenceRefs(..))
 import Level.Types exposing (..)
 import Set exposing (Set)
 import Utils
@@ -161,7 +165,7 @@ tryToInferDed mod ex =
 
 tryToInfer : { theory : List Expr, steps : List Step } -> Expr -> Maybe Reason
 tryToInfer model ex =
-    if Infer.tryFromHypothesis model.theory (currAssumed model.steps) ex then
+    if Infer.Hypothesis.tryFromHypothesis model.theory (currAssumed model.steps) ex then
         Just Hypotesis
 
     else
@@ -192,7 +196,7 @@ tryToInferMonot lst ex =
     Maybe.andThen
         (\_ ->
             Maybe.map Monotony
-                (Infer.tryFromMonotony
+                (Infer.Monotony.tryFromMonotony
                     (List.filterMap
                         tryToInferMonotFilterDeduction
                         lst
@@ -215,26 +219,26 @@ tryToInferMonotFilterDeduction step =
 
 tryToInferRepl : List { number : Int, ex : Expr } -> Expr -> Maybe Reason
 tryToInferRepl itms ex =
-    Infer.tryFromReplacement itms ex
+    Infer.Transformation.tryFromReplacement itms ex
         |> Maybe.map Equivalence
 
 
 tryToInferImpl : List { number : Int, ex : Expr } -> Expr -> Maybe Reason
 tryToInferImpl lst ex =
-    Infer.tryFromImplication lst ex
+    Infer.Transformation.tryFromImplication lst ex
         |> Maybe.map Implication
 
 
 tryToInferRule : List Step -> Expr -> Maybe Reason
 tryToInferRule lst ex =
-    Infer.tryFromInferenceRule (List.filterMap tryToInferRuleStep lst) (currAssumed lst) ex
+    Infer.InferenceRule.tryFromInferenceRule (List.filterMap tryToInferRuleStep lst) (currAssumed lst) ex
         |> Maybe.map
             (\e ->
                 case e.refs of
-                    Infer.OneRef ref ->
+                    Infer.Types.OneRef ref ->
                         InferenceRule1 { name = e.name, ref1 = ref }
 
-                    Infer.TwoRefs ref1 ref2 ->
+                    Infer.Types.TwoRefs ref1 ref2 ->
                         InferenceRule2 { name = e.name, ref1 = ref1, ref2 = ref2 }
             )
 
