@@ -1,6 +1,6 @@
 module Level.Types exposing (..)
 
-import Expr.Types exposing (Expr(..))
+import Expr.Types exposing (Domain, Expr(..), extractDomainFromTheory)
 import Set exposing (Set)
 
 
@@ -24,9 +24,24 @@ type alias ExT =
     , ded_text : String
     , error_msg : Maybe String
     , theory : List Expr
+    , domain : Domain
     , steps : List Step
-    , known_props : Set String
     }
+
+
+{-| Usen in AllLevels to create the levels
+-}
+makeLevel : { descr : String, goal : Expr, theory : List Expr } -> Model
+makeLevel info =
+    Ex
+        { descr = info.descr
+        , goal = info.goal
+        , theory = info.theory
+        , ded_text = ""
+        , error_msg = Nothing
+        , steps = []
+        , domain = extractDomainFromTheory (info.goal :: info.theory)
+        }
 
 
 type Model

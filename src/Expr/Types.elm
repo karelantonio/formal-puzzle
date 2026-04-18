@@ -6,7 +6,7 @@ module Expr.Types exposing
     , ParseError
     , arity
     , emptyDomain
-    , extractAllKnownPropositions
+    , extractDomainFromTheory
     , isSimple
     , parToString
     , toString
@@ -51,14 +51,76 @@ type alias ParseError =
 
 
 type alias Domain =
-    { domain : Set String, predicates : Dict String Int, functions : Dict String Int }
+    { domain : Set String, propositions : Set String, predicates : Dict String Int, functions : Dict String Int }
 
 
 {-| Empty domain
 -}
 emptyDomain : Domain
 emptyDomain =
-    { domain = Set.empty, predicates = Dict.empty, functions = Dict.empty }
+    { domain = Set.empty, propositions = Set.empty, predicates = Dict.empty, functions = Dict.empty }
+
+
+{-| Extract the domain, it is safe to assume that the happy path, as this is only provided by the dev
+-}
+extractDomainFromTheory : List Expr -> Domain
+extractDomainFromTheory =
+    List.foldl extractDomainFromExpr emptyDomain
+
+
+extractDomainFromExpr : Expr -> Domain -> Domain
+extractDomainFromExpr ex dom =
+    case ex of
+        One ->
+            dom
+
+        Zero ->
+            dom
+
+        Ident name ->
+            { dom | propositions = Set.insert name dom.propositions }
+
+        Neg e ->
+            extractDomainFromExpr e dom
+
+        And l r ->
+            extractDomainFromExpr l dom |> extractDomainFromExpr r
+
+        Or l r ->
+            extractDomainFromExpr l dom |> extractDomainFromExpr r
+
+        Implies l r ->
+            extractDomainFromExpr l dom |> extractDomainFromExpr r
+
+        Iff l r ->
+            extractDomainFromExpr l dom |> extractDomainFromExpr r
+
+        Predicate name args ->
+            List.foldl extractDomainFromFunTree { dom | predicates = Dict.insert name (List.length args) dom.predicates } args
+
+        Forall var sub ->
+            let
+                subdom =
+                    extractDomainFromExpr sub dom
+            in
+            { subdom | domain = Set.remove var subdom.domain }
+
+        Exists var sub ->
+            let
+                subdom =
+                    extractDomainFromExpr sub dom
+            in
+            { subdom | domain = Set.remove var subdom.domain }
+
+
+extractDomainFromFunTree : FunTree -> Domain -> Domain
+extractDomainFromFunTree ftr dom =
+    case ftr of
+        Atom name ->
+            { dom | domain = Set.insert name dom.domain }
+
+        Apply name args ->
+            List.foldl extractDomainFromFunTree { dom | functions = Dict.insert name (List.length args) dom.functions } args
 
 
 {-| Check if an expression is simple
@@ -158,52 +220,6 @@ parToString expr =
 
     else
         "(" ++ toString expr ++ ")"
-
-
-
--- Extract known propositions
-
-
-extractAllKnownPropositions : List Expr -> Set String
-extractAllKnownPropositions lst =
-    List.foldl extractKnownPropositions Set.empty lst
-
-
-extractKnownPropositions : Expr -> Set String -> Set String
-extractKnownPropositions ex st =
-    case ex of
-        One ->
-            st
-
-        Zero ->
-            st
-
-        Ident x ->
-            Set.insert x st
-
-        Neg e ->
-            extractKnownPropositions e st
-
-        And l r ->
-            extractKnownPropositions l st |> extractKnownPropositions r
-
-        Or l r ->
-            extractKnownPropositions l st |> extractKnownPropositions r
-
-        Implies l r ->
-            extractKnownPropositions l st |> extractKnownPropositions r
-
-        Iff l r ->
-            extractKnownPropositions l st |> extractKnownPropositions r
-
-        Predicate _ _ ->
-            st
-
-        Forall _ sub ->
-            extractKnownPropositions sub st
-
-        Exists _ sub ->
-            extractKnownPropositions sub st
 
 
 {-| Get the arity of a function (number of args) or 0 if is a constant

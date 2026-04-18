@@ -3,8 +3,10 @@ module AllRules exposing (allEquivalences, allImplications, allInferenceRulesAss
 {-| All the rules
 -}
 
+import Dict
 import Expr.Parser exposing (parse)
-import Expr.Types exposing (Expr(..), emptyDomain)
+import Expr.Types exposing (Domain, Expr(..), emptyDomain)
+import Set
 
 
 allEquivalences : List ( String, Expr, Expr )
@@ -123,7 +125,7 @@ steps2 name what1 what2 th =
 
 parseAndUnwrap : String -> Expr
 parseAndUnwrap s =
-    case parse emptyDomain s of
+    case parse commonDomain s of
         Ok res ->
             res
 
@@ -131,3 +133,12 @@ parseAndUnwrap s =
             -- Workaround, but should reach here
             -- todo ("Not implemented (" ++ Debug.toString err ++ ")")
             Ident "[redacted]"
+
+
+commonDomain : Domain
+commonDomain =
+    { domain = Set.singleton "t"
+    , functions = Dict.singleton "f" 1
+    , predicates = Dict.fromList [ ( "P", 1 ), ( "Q", 1 ), ( "R", 1 ), ( "P2", 2 ), ( "Q2", 2 ), ( "R2", 2 ) ]
+    , propositions = Set.fromList [ "A", "B", "C", "D" ]
+    }

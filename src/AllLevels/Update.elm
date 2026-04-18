@@ -1,23 +1,15 @@
 module AllLevels.Update exposing (update)
 
 import AllLevels.Types exposing (Model(..), Msg(..))
-import Expr.Types exposing (extractAllKnownPropositions)
-import Level.Types
+import Expr.Types exposing (extractDomainFromTheory)
+import Level.Types exposing (makeLevel)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg _ =
     case msg of
         LevelClicked lvl ->
-            ( Level.Types.Ex
-                { ded_text = ""
-                , error_msg = Nothing
-                , theory = lvl.theory
-                , steps = [ Level.Types.Assume Nothing ]
-                , goal = lvl.goal
-                , descr = lvl.descr
-                , known_props = extractAllKnownPropositions lvl.theory
-                }
+            ( makeLevel { descr = lvl.descr, goal = lvl.goal, theory = lvl.theory }
                 |> ChangeToLevel
             , Cmd.none
             )

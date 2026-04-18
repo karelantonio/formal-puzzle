@@ -94,7 +94,7 @@ step2html step =
 
 step2htmlAssume : Maybe Expr -> Html Msg
 step2htmlAssume maex =
-    case maex of
+    case Debug.log "maex=" maex of
         Just what ->
             tr [ class "exercise-step-deduction" ]
                 [ td []

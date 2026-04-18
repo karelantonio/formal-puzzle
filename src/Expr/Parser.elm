@@ -314,8 +314,12 @@ checkPredicate domain declared ex =
         Iff l r ->
             Result.map2 (\x y -> Iff x y) (checkPredicate domain declared l) (checkPredicate domain declared r)
 
-        Ident _ ->
-            Ok ex
+        Ident name ->
+            if Set.member name domain.propositions then
+                Ok ex
+
+            else
+                Err ("La proposición " ++ name ++ " no es conocida")
 
         Predicate name args ->
             -- Check arity
@@ -348,7 +352,7 @@ checkPredicate domain declared ex =
                 Err ("La variable " ++ name ++ " ya ha sido declarada en un nivel superior, no es posible reusarla dentro del mismo bloque")
 
             else
-                checkPredicate domain (Set.insert name declared) sub
+                checkPredicate domain (Set.insert name declared) sub |> Result.map (Forall name)
 
         Exists name sub ->
             if Set.member name domain.domain then
@@ -358,7 +362,7 @@ checkPredicate domain declared ex =
                 Err ("La variable " ++ name ++ " ya ha sido declarada en un nivel superior, no es posible reusarla dentro del mismo bloque")
 
             else
-                checkPredicate domain (Set.insert name declared) sub
+                checkPredicate domain (Set.insert name declared) sub |> Result.map (Exists name)
 
 
 checkFunTree : Domain -> Set String -> FunTree -> Result String FunTree

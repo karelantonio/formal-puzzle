@@ -1,7 +1,7 @@
 module Level.Update exposing (update)
 
 import Expr.Parser exposing (parse)
-import Expr.Types exposing (Expr(..), emptyDomain, toString)
+import Expr.Types exposing (Expr(..), toString)
 import Infer.Hypothesis
 import Infer.InferenceRule
 import Infer.Monotony
@@ -26,7 +26,7 @@ updateEx msg ex =
             ( Ex { ex | ded_text = txt, error_msg = Nothing }, Cmd.none )
 
         AddPressed ->
-            case parse emptyDomain ex.ded_text of
+            case parse ex.domain ex.ded_text of
                 Ok parsed_ex ->
                     updateHandleParsed ex parsed_ex
 
@@ -43,14 +43,10 @@ updateEx msg ex =
                 ( Ex { ex | steps = addAssumeToSteps Nothing ex.steps }, Cmd.none )
 
             else
-                case parse emptyDomain ex.ded_text of
+                case parse ex.domain ex.ded_text of
                     Ok parsed_ex ->
-                        case checkOnlyKnownPropositions ex.known_props parsed_ex of
-                            Ok checked_ex ->
-                                ( Ex { ex | steps = addAssumeToSteps (Just checked_ex) ex.steps }, Cmd.none )
-
-                            Err err ->
-                                ( Ex { ex | error_msg = err |> Just }, Cmd.none )
+                        -- Already checked
+                        ( Ex { ex | steps = addAssumeToSteps (Just parsed_ex) ex.steps }, Cmd.none )
 
                     Err err ->
                         ( Ex { ex | error_msg = err.msg ++ " (Posición: " ++ String.fromInt err.location ++ ")" |> Just }, Cmd.none )
@@ -61,16 +57,6 @@ updateEx msg ex =
 
 updateHandleParsed : ExT -> Expr -> ( Model, Cmd Msg )
 updateHandleParsed ex parsed_ex =
-    case checkOnlyKnownPropositions ex.known_props parsed_ex of
-        Ok p ->
-            updateHandleParsedAllKnown ex p
-
-        Err e ->
-            ( Ex { ex | error_msg = Just e }, Cmd.none )
-
-
-updateHandleParsedAllKnown : ExT -> Expr -> ( Model, Cmd Msg )
-updateHandleParsedAllKnown ex parsed_ex =
     case tryToInferDed { theory = ex.theory, steps = ex.steps } parsed_ex of
         Just ded ->
             ( Ex
@@ -88,51 +74,6 @@ updateHandleParsedAllKnown ex parsed_ex =
                 }
             , Utils.scrollToBottom "exercise-ui"
             )
-
-
-
--- Check if an expression uses unknown things
-
-
-checkOnlyKnownPropositions : Set String -> Expr -> Result String Expr
-checkOnlyKnownPropositions thry ex =
-    case ex of
-        One ->
-            Ok ex
-
-        Zero ->
-            Ok ex
-
-        Ident i ->
-            if Set.member i thry then
-                Ok ex
-
-            else
-                Err ("La proposición '" ++ i ++ "' no es conocida")
-
-        Neg e ->
-            checkOnlyKnownPropositions thry e |> Result.andThen (\_ -> Ok ex)
-
-        And l r ->
-            Result.map2 (\_ _ -> ex) (checkOnlyKnownPropositions thry l) (checkOnlyKnownPropositions thry r)
-
-        Or l r ->
-            Result.map2 (\_ _ -> ex) (checkOnlyKnownPropositions thry l) (checkOnlyKnownPropositions thry r)
-
-        Implies l r ->
-            Result.map2 (\_ _ -> ex) (checkOnlyKnownPropositions thry l) (checkOnlyKnownPropositions thry r)
-
-        Iff l r ->
-            Result.map2 (\_ _ -> ex) (checkOnlyKnownPropositions thry l) (checkOnlyKnownPropositions thry r)
-
-        Predicate _ _ ->
-            Ok ex
-
-        Forall _ sub ->
-            checkOnlyKnownPropositions thry sub
-
-        Exists _ sub ->
-            checkOnlyKnownPropositions thry sub
 
 
 
