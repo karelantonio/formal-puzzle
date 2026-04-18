@@ -75,3 +75,12 @@ replaceAll ex dik =
 
         Iff l r ->
             Maybe.map2 Iff (replaceAll l dik) (replaceAll r dik)
+
+        Predicate _ _ ->
+            Just ex
+
+        Forall _ sub ->
+            replaceAll sub dik
+
+        Exists _ sub ->
+            replaceAll sub dik

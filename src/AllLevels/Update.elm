@@ -1,7 +1,7 @@
 module AllLevels.Update exposing (update)
 
 import AllLevels.Types exposing (Model(..), Msg(..))
-import Expr.Utils exposing (extractAllKnownPropositions)
+import Expr.Types exposing (extractAllKnownPropositions)
 import Level.Types
 
 

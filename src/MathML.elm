@@ -3,8 +3,7 @@ module MathML exposing (exprToMathML, exprToMathMLTag)
 {-| Convert expressions to mathml tags
 -}
 
-import Expr.Types exposing (Expr(..))
-import Expr.Utils exposing (isSimple)
+import Expr.Types exposing (Expr(..), FunTree(..), isSimple)
 import Html exposing (Html, node, text)
 
 
@@ -40,6 +39,26 @@ exprToMathMLTag ex =
         Iff a b ->
             exprToMathMLTagPar a ++ (node "mo" [] [ text "⟺" ] :: exprToMathMLTagPar b)
 
+        Predicate name args ->
+            node "mi" [] [ text name ]
+                :: node "mo" [] [ text "(" ]
+                :: joinWith (node "mo" [] [ text "," ]) (List.map funTreeToMathMLTag args |> List.concat)
+                ++ [ node "mo" [] [ text ")" ] ]
+
+        Forall name sub ->
+            node "mo" [] [ text "∀" ]
+                :: node "mo" [] [ text "(" ]
+                :: node "mi" [] [ text name ]
+                :: node "mo" [] [ text ")" ]
+                :: exprToMathMLTagPar sub
+
+        Exists name sub ->
+            node "mo" [] [ text "∃" ]
+                :: node "mo" [] [ text "(" ]
+                :: node "mi" [] [ text name ]
+                :: node "mo" [] [ text ")" ]
+                :: exprToMathMLTagPar sub
+
 
 exprToMathMLTagPar : Expr -> List (Html msg)
 exprToMathMLTagPar ex =
@@ -48,3 +67,29 @@ exprToMathMLTagPar ex =
 
     else
         node "mo" [] [ text "(" ] :: exprToMathMLTag ex ++ [ node "mo" [] [ text ")" ] ]
+
+
+funTreeToMathMLTag : FunTree -> List (Html msg)
+funTreeToMathMLTag tr =
+    case tr of
+        Variable name ->
+            [ node "mi" [] [ text name ] ]
+
+        Value name ->
+            [ node "mi" [] [ text name ] ]
+
+        Apply name args ->
+            node "mi" [] [ text name ]
+                :: node "mo" [] [ text "(" ]
+                :: joinWith (node "mo" [] [ text "," ]) (List.map funTreeToMathMLTag args |> List.concat)
+                ++ [ node "mo" [] [ text ")" ] ]
+
+
+joinWith : a -> List a -> List a
+joinWith val lst =
+    case lst of
+        hd :: tl ->
+            hd :: List.concatMap (\e -> [ val, e ]) tl
+
+        [] ->
+            []

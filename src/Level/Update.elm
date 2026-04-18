@@ -1,8 +1,7 @@
 module Level.Update exposing (update)
 
 import Expr.Parser exposing (parse)
-import Expr.Types exposing (Expr(..))
-import Expr.Utils exposing (toString)
+import Expr.Types exposing (Expr(..), toString)
 import Infer.Hypothesis
 import Infer.InferenceRule
 import Infer.Monotony
@@ -125,6 +124,15 @@ checkOnlyKnownPropositions thry ex =
 
         Iff l r ->
             Result.map2 (\_ _ -> ex) (checkOnlyKnownPropositions thry l) (checkOnlyKnownPropositions thry r)
+
+        Predicate _ _ ->
+            Ok ex
+
+        Forall _ sub ->
+            checkOnlyKnownPropositions thry sub
+
+        Exists _ sub ->
+            checkOnlyKnownPropositions thry sub
 
 
 

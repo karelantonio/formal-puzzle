@@ -1,6 +1,6 @@
 module AllLevels.Types exposing (..)
 
-import Expr.Types exposing (Expr(..))
+import Expr.Types exposing (Expr(..), FunTree(..))
 import Html exposing (Html, div, h4, p, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
@@ -45,6 +45,12 @@ levels =
       , goal = Implies (And (Ident "S") (Ident "P")) (Neg (Ident "A"))
       , descr = "En la isla de los pollos, donde todos siempre dicen la verdad o mienten al menos una vez, ha surgido un dilema, donde Adán (A) dice: hay alguien entre Papote (P), Sergio (S) y yo (A) que dice mentiras. Los detalles no importan pero ahora ellos se empeñan en demostrar que si Sergio (S) y Papote (P) dicen la verdad entonces Adán (A) miente. Las expresiones A, P y S representan: Adán, Papote y Sergio dicen la verdad respectivamente."
       , approx_steps = 8
+      }
+    , { name = "Cuantificadores"
+      , theory = [ Forall "x" (Predicate "P" [ Variable "x" ]) ]
+      , goal = Predicate "P" [ Value "1" ]
+      , descr = "Esto solo es para probar los predicados"
+      , approx_steps = 2
       }
     ]
 
