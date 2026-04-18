@@ -45,20 +45,23 @@ bottomBar dedtext =
                 , type_ "text"
                 ]
                 []
-            , input
-                [ type_ "button"
-                , class "exercise-bottom-bar-btn"
-                , onClick AddPressed
-                , value "+"
+            , div [ class "exercise-bottom-bar-buttons" ]
+                [ div [ id "separator" ] []
+                , input
+                    [ type_ "button"
+                    , class "exercise-bottom-bar-btn"
+                    , onClick AddPressed
+                    , value "+"
+                    ]
+                    []
+                , input
+                    [ type_ "button"
+                    , class "exercise-bottom-bar-btn"
+                    , onClick TheoryPressed
+                    , value "T"
+                    ]
+                    []
                 ]
-                []
-            , input
-                [ type_ "button"
-                , class "exercise-bottom-bar-btn"
-                , onClick TheoryPressed
-                , value "T"
-                ]
-                []
             ]
         ]
 

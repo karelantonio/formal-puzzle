@@ -33,6 +33,7 @@ body {
 
 .exercise-bottom-bar form {
   display: flex;
+  flex-direction: column;
   width: 100%;
   height: auto;
   box-shadow: 0 0px 12px rgba(0,0,0,0.12);
@@ -47,10 +48,21 @@ body {
   background: transparent;
 }
 
+.exercise-bottom-bar-buttons {
+  flex: 1;
+  width: 98%;
+  margin: 4px 1%;
+  display: flex;
+}
+
+.exercise-bottom-bar-buttons #separator {
+  flex: 1;
+}
+
 .exercise-bottom-bar-btn {
   height: 100%;
   align-self: center;
-  padding: 8px;
+  padding: 8px 14px;
   margin-right: 4px;
   border: none;
   border-radius: 4px;
