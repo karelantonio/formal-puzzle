@@ -23,6 +23,9 @@ type TokenKind
     | TokImplies
     | TokIff
     | TokIdent String
+    | TokForall
+    | TokExists
+    | TokComma
     | TokUnknown String
 
 
@@ -68,6 +71,15 @@ tokenKindToString k =
         TokIdent id ->
             "Identifier (" ++ id ++ ")"
 
+        TokForall ->
+            "∀"
+
+        TokExists ->
+            "∃"
+
+        TokComma ->
+            ","
+
         TokUnknown c ->
             "Unkown (" ++ c ++ ")"
 
@@ -108,6 +120,15 @@ tokenize idx s =
 
             else if head == '<' && take 2 body == [ '-', '>' ] then
                 { pos = idx, kind = TokIff } :: tokenize (idx + 4) (drop 2 body)
+
+            else if head == '∀' || head == '@' then
+                { pos = idx, kind = TokForall } :: tokenize (idx + 1) body
+
+            else if head == '∃' || head == '%' || head == '€' then
+                { pos = idx, kind = TokExists } :: tokenize (idx + 1) body
+
+            else if head == ',' then
+                { pos = idx, kind = TokComma } :: tokenize (idx + 1) body
 
             else if head == ' ' || head == '\t' || head == '\n' || head == '\u{000D}' then
                 tokenize (idx + 1) body

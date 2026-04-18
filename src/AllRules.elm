@@ -4,7 +4,7 @@ module AllRules exposing (allEquivalences, allImplications, allInferenceRulesAss
 -}
 
 import Expr.Parser exposing (parse)
-import Expr.Types exposing (Expr(..))
+import Expr.Types exposing (Expr(..), emptyDomain)
 
 
 allEquivalences : List ( String, Expr, Expr )
@@ -123,7 +123,7 @@ steps2 name what1 what2 th =
 
 parseAndUnwrap : String -> Expr
 parseAndUnwrap s =
-    case parse s of
+    case parse emptyDomain s of
         Ok res ->
             res
 

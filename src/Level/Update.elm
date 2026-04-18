@@ -1,7 +1,7 @@
 module Level.Update exposing (update)
 
 import Expr.Parser exposing (parse)
-import Expr.Types exposing (Expr(..), toString)
+import Expr.Types exposing (Expr(..), emptyDomain, toString)
 import Infer.Hypothesis
 import Infer.InferenceRule
 import Infer.Monotony
@@ -26,7 +26,7 @@ updateEx msg ex =
             ( Ex { ex | ded_text = txt, error_msg = Nothing }, Cmd.none )
 
         AddPressed ->
-            case parse ex.ded_text of
+            case parse emptyDomain ex.ded_text of
                 Ok parsed_ex ->
                     updateHandleParsed ex parsed_ex
 
@@ -43,7 +43,7 @@ updateEx msg ex =
                 ( Ex { ex | steps = addAssumeToSteps Nothing ex.steps }, Cmd.none )
 
             else
-                case parse ex.ded_text of
+                case parse emptyDomain ex.ded_text of
                     Ok parsed_ex ->
                         case checkOnlyKnownPropositions ex.known_props parsed_ex of
                             Ok checked_ex ->

@@ -47,8 +47,8 @@ levels =
       , approx_steps = 8
       }
     , { name = "Cuantificadores"
-      , theory = [ Forall "x" (Predicate "P" [ Variable "x" ]) ]
-      , goal = Predicate "P" [ Value "1" ]
+      , theory = [ Forall "x" (Predicate "P" [ Atom "x" ]) ]
+      , goal = Predicate "P" [ Atom "1" ]
       , descr = "Esto solo es para probar los predicados"
       , approx_steps = 2
       }

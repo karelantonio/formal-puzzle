@@ -72,10 +72,7 @@ exprToMathMLTagPar ex =
 funTreeToMathMLTag : FunTree -> List (Html msg)
 funTreeToMathMLTag tr =
     case tr of
-        Variable name ->
-            [ node "mi" [] [ text name ] ]
-
-        Value name ->
+        Atom name ->
             [ node "mi" [] [ text name ] ]
 
         Apply name args ->

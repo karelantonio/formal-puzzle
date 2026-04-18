@@ -1,14 +1,27 @@
-module Expr.Types exposing (Expr(..), FunTree(..), InferenceRefs, extractAllKnownPropositions, isSimple, parToString, toString, toStringFunTree)
+module Expr.Types exposing
+    ( Domain
+    , Expr(..)
+    , FunTree(..)
+    , InferenceRefs
+    , ParseError
+    , arity
+    , emptyDomain
+    , extractAllKnownPropositions
+    , isSimple
+    , parToString
+    , toString
+    , toStringFunTree
+    )
 
 {-| An expression
 -}
 
+import Dict exposing (Dict)
 import Set exposing (Set)
 
 
 type FunTree
-    = Variable String
-    | Value String
+    = Atom String
     | Apply String (List FunTree)
 
 
@@ -29,6 +42,23 @@ type Expr
 type InferenceRefs
     = OneRef Int
     | TwoRefs Int Int
+
+
+{-| The location and cause of the error
+-}
+type alias ParseError =
+    { location : Int, msg : String }
+
+
+type alias Domain =
+    { domain : Set String, predicates : Dict String Int, functions : Dict String Int }
+
+
+{-| Empty domain
+-}
+emptyDomain : Domain
+emptyDomain =
+    { domain = Set.empty, predicates = Dict.empty, functions = Dict.empty }
 
 
 {-| Check if an expression is simple
@@ -112,10 +142,7 @@ toString expr =
 toStringFunTree : FunTree -> String
 toStringFunTree ftr =
     case ftr of
-        Variable name ->
-            name
-
-        Value name ->
+        Atom name ->
             name
 
         Apply name args ->
@@ -184,10 +211,7 @@ extractKnownPropositions ex st =
 arity : FunTree -> Int
 arity tr =
     case tr of
-        Value _ ->
-            0
-
-        Variable _ ->
+        Atom _ ->
             0
 
         Apply _ arg ->
