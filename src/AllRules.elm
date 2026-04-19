@@ -37,7 +37,20 @@ allEquivalences =
     , pr "L22" "-A->B" "A|B"
     , pr "L23" "A<->B" "(A->B)&(B->A)"
     , pr "L43" "∀(x)[A(x)->B]" "∃(x)A(x)->B"
-    , pr "L44" "∀(x)-A(x)" "-(∃(x)A(x))"
+    , pr "L44" "∀(x)-A(x)" "-∃(x)A(x)"
+    , pr "L45" "∀(x)A(x)" "-∃(x)-A(x)"
+    , pr "L46" "-∀(x)A(x)" "∃(x)-A(x)"
+    , pr "L47" "-∀(x)-A(x)" "∃(x)A(x)"
+
+    -- pr "L48", "L49", "L50", "L51", "L52", "L53", "L54", "L62"
+    -- must be added manually
+    -- the reason is there is a known bug in the matcher
+    -- that does not care is an expression has free variable
+    -- or not
+    , pr "L55" "∃(x)(A(x)|B(x))" "∃(x)A(x)|∃(x)B(x)"
+    , pr "L57" "∀(x)(A(x)&B(x))" "∀(x)A(x)&∀(x)A(x)"
+    , pr "L59" "∀(x)∀(y)A(x,y)" "∀(y)∀(x)A(x,y)"
+    , pr "L60" "∃(x)∃(y)A(x,y)" "∃(y)∃(x)A(x,y)"
 
     -- TODO: Add the remaining rules
     ]
@@ -66,7 +79,11 @@ allImplications =
     , pr "L39" "A" "A|B"
     , pr "L40" "A&B" "A"
     , pr "L41" "A" "B->A"
-    , pr "L42" "∀(x)A(x)" "A(t)"
+    , pr "L42" "∀(x)A(x)" "A(T)"
+    , pr "L56" "∃(x)(A(x)&B(x))" "∃(x)A(x)&∃(x)B(x)"
+    , pr "L58" "∀(x)A(x)|∀(x)B(x)" "∀(x)(A(x)|B(x))"
+    , pr "L61" "∃(x)∀(y)A(x,y)" "∀(y)∃(x)A(x,y)"
+    , pr "L63" "∀(x)A(x)|∀(y)B(y)" "∀(x)∀(y)(A(x)|B(y))"
     ]
 
 
@@ -142,7 +159,7 @@ parseAndUnwrap s =
 
 commonDomain : Domain
 commonDomain =
-    { domain = Set.singleton "t"
+    { domain = Set.singleton "T"
     , functions = Dict.singleton "f" 1
     , predicates = Dict.fromList [ ( "A", 1 ), ( "B", 1 ), ( "C", 1 ), ( "A2", 2 ), ( "B2", 2 ), ( "C2", 2 ), ( "P", 1 ), ( "Q", 1 ), ( "R", 1 ), ( "P2", 2 ), ( "Q2", 2 ), ( "R2", 2 ) ]
     , propositions = Set.fromList [ "A", "B", "C", "D" ]
