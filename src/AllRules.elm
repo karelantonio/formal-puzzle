@@ -36,6 +36,10 @@ allEquivalences =
     , pr "L22" "A->B" "-A|B"
     , pr "L22" "-A->B" "A|B"
     , pr "L23" "A<->B" "(A->B)&(B->A)"
+    , pr "L43" "∀(x)[A(x)->B]" "∃(x)A(x)->B"
+    , pr "L44" "∀(x)-A(x)" "-(∃(x)A(x))"
+
+    -- TODO: Add the remaining rules
     ]
 
 
@@ -62,6 +66,7 @@ allImplications =
     , pr "L39" "A" "A|B"
     , pr "L40" "A&B" "A"
     , pr "L41" "A" "B->A"
+    , pr "L42" "∀(x)A(x)" "A(t)"
     ]
 
 
@@ -139,6 +144,6 @@ commonDomain : Domain
 commonDomain =
     { domain = Set.singleton "t"
     , functions = Dict.singleton "f" 1
-    , predicates = Dict.fromList [ ( "P", 1 ), ( "Q", 1 ), ( "R", 1 ), ( "P2", 2 ), ( "Q2", 2 ), ( "R2", 2 ) ]
+    , predicates = Dict.fromList [ ( "A", 1 ), ( "B", 1 ), ( "C", 1 ), ( "A2", 2 ), ( "B2", 2 ), ( "C2", 2 ), ( "P", 1 ), ( "Q", 1 ), ( "R", 1 ), ( "P2", 2 ), ( "Q2", 2 ), ( "R2", 2 ) ]
     , propositions = Set.fromList [ "A", "B", "C", "D" ]
     }

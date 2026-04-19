@@ -14,12 +14,13 @@ type alias Clues =
     , propositions : Dict String Expr
     , predicates : Dict String Expr
     , values : Dict String FunTree
+    , predArgNames : Dict String (List String)
     }
 
 
 emptyClues : Clues
 emptyClues =
-    { variables = Dict.empty, propositions = Dict.empty, predicates = Dict.empty, values = Dict.empty }
+    { variables = Dict.empty, propositions = Dict.empty, predicates = Dict.empty, values = Dict.empty, predArgNames = Dict.empty }
 
 
 matchAllTwice : List Expr -> List Expr -> Clues -> Result () Clues
@@ -117,20 +118,93 @@ match ex pat clues =
 
                     Nothing ->
                         -- Save
-                        Ok { clues | predicates = Dict.insert name left clues.predicates }
+                        Ok
+                            { clues
+                                | predicates = Dict.insert name left clues.predicates
+                                , predArgNames = Dict.insert name (List.filterMap nameOfNode args) clues.predArgNames
+                            }
 
             else
-                case Dict.get name clues.predicates of
-                    Just saved ->
-                        -- Extract values
-                        extractCluesPredicate saved left clues
+                case ( Dict.get name clues.predArgNames, Dict.get name clues.predicates ) of
+                    ( Just names, Just original ) ->
+                        let
+                            whatToReplace =
+                                List.map2 Tuple.pair names args
+                                    |> Dict.fromList
+                        in
+                        (replaceInOriginalE whatToReplace original
+                            |> extractCluesPredicate left
+                        )
+                            clues
 
-                    Nothing ->
+                    _ ->
                         -- Nothing to do
                         Ok clues
 
         _ ->
             Err ()
+
+
+replaceInOriginalE : Dict String FunTree -> Expr -> Expr
+replaceInOriginalE dik ex =
+    case ex of
+        One ->
+            One
+
+        Zero ->
+            Zero
+
+        Ident a ->
+            Ident a
+
+        Neg e ->
+            replaceInOriginalE dik e |> Neg
+
+        And l r ->
+            And (replaceInOriginalE dik l) (replaceInOriginalE dik r)
+
+        Or l r ->
+            Or (replaceInOriginalE dik l) (replaceInOriginalE dik r)
+
+        Implies l r ->
+            Implies (replaceInOriginalE dik l) (replaceInOriginalE dik r)
+
+        Iff l r ->
+            Iff (replaceInOriginalE dik l) (replaceInOriginalE dik r)
+
+        Forall x s ->
+            Forall x (replaceInOriginalE dik s)
+
+        Exists x s ->
+            Exists x (replaceInOriginalE dik s)
+
+        Predicate n a ->
+            List.map (replaceInOriginalF dik) a |> Predicate n
+
+
+replaceInOriginalF : Dict String FunTree -> FunTree -> FunTree
+replaceInOriginalF dik ft =
+    case ft of
+        Atom name ->
+            case Dict.get name dik of
+                Just v ->
+                    v
+
+                Nothing ->
+                    Atom name
+
+        Apply n a ->
+            List.map (replaceInOriginalF dik) a |> Apply n
+
+
+nameOfNode : FunTree -> Maybe String
+nameOfNode fnt =
+    case fnt of
+        Atom name ->
+            Just name
+
+        _ ->
+            Nothing
 
 
 extractCluesPredicate : Expr -> Expr -> Clues -> Result () Clues
@@ -282,15 +356,25 @@ replace ex clues =
 
         Predicate name args ->
             case Dict.get name clues.predicates of
-                Just newname ->
-                    replaceButInFunTree newname clues
+                Just origpred ->
+                    replaceButInFunTree origpred (makePredRepl name clues args) clues
 
                 Nothing ->
                     Err ()
 
 
-replaceButInFunTree : Expr -> Clues -> Result () Expr
-replaceButInFunTree ex clues =
+makePredRepl : String -> Clues -> List FunTree -> Dict String FunTree
+makePredRepl name clues args =
+    case Dict.get name clues.predArgNames of
+        Just v ->
+            List.map2 Tuple.pair v args |> Dict.fromList
+
+        Nothing ->
+            Dict.empty
+
+
+replaceButInFunTree : Expr -> Dict String FunTree -> Clues -> Result () Expr
+replaceButInFunTree ex repl clues =
     case ex of
         One ->
             Ok One
@@ -302,50 +386,59 @@ replaceButInFunTree ex clues =
             Ok ex
 
         Neg sub ->
-            replaceButInFunTree sub clues |> Result.map Neg
+            replaceButInFunTree sub repl clues |> Result.map Neg
 
         And l r ->
-            Result.map2 And (replaceButInFunTree l clues) (replaceButInFunTree r clues)
+            Result.map2 And (replaceButInFunTree l repl clues) (replaceButInFunTree r repl clues)
 
         Or l r ->
-            Result.map2 Or (replaceButInFunTree l clues) (replaceButInFunTree r clues)
+            Result.map2 Or (replaceButInFunTree l repl clues) (replaceButInFunTree r repl clues)
 
         Implies l r ->
-            Result.map2 Implies (replaceButInFunTree l clues) (replaceButInFunTree r clues)
+            Result.map2 Implies (replaceButInFunTree l repl clues) (replaceButInFunTree r repl clues)
 
         Iff l r ->
-            Result.map2 Iff (replaceButInFunTree l clues) (replaceButInFunTree r clues)
+            Result.map2 Iff (replaceButInFunTree l repl clues) (replaceButInFunTree r repl clues)
 
         Forall name sub ->
-            replaceButInFunTree sub clues |> Result.map (Forall name)
+            replaceButInFunTree sub repl clues |> Result.map (Forall name)
 
         Exists name sub ->
-            replaceButInFunTree sub clues |> Result.map (Exists name)
+            replaceButInFunTree sub repl clues |> Result.map (Exists name)
 
         Predicate name args ->
-            List.map (\e -> replaceFunTree e clues) args
-                |> toResultAll
-                |> Result.map (Predicate name)
+            -- Replace things in the args
+            List.map (replaceAllInFT repl clues) args |> Predicate name |> Ok
 
 
-replaceFunTree : FunTree -> Clues -> Result () FunTree
-replaceFunTree node clues =
-    case node of
+replaceAllInFT : Dict String FunTree -> Clues -> FunTree -> FunTree
+replaceAllInFT dik clues ft =
+    case ft of
         Atom name ->
-            case Dict.get name clues.variables of
-                Just newname ->
-                    Ok (Atom newname)
+            case ( Dict.get name dik, Dict.get name clues.variables ) of
+                ( Just val, _ ) ->
+                    replaceAllInFTEvenMore clues val
 
-                Nothing ->
-                    case Dict.get name clues.values of
-                        Just newval ->
-                            Ok newval
+                ( _, Just newname ) ->
+                    Atom newname
 
-                        Nothing ->
-                            Err ()
+                _ ->
+                    ft
 
         Apply name args ->
-            -- Should probably handle this with more care in the future
-            List.map (\e -> replaceFunTree e clues) args
-                |> toResultAll
-                |> Result.map (Apply name)
+            List.map (replaceAllInFT dik clues) args |> Apply name
+
+
+replaceAllInFTEvenMore : Clues -> FunTree -> FunTree
+replaceAllInFTEvenMore clues ft =
+    case ft of
+        Atom name ->
+            case Dict.get name clues.values of
+                Just newval ->
+                    newval
+
+                Nothing ->
+                    Atom name
+
+        Apply name args ->
+            List.map (replaceAllInFTEvenMore clues) args |> Apply name

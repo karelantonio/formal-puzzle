@@ -72,8 +72,11 @@ parseQuantifier lst =
                 TokExists ->
                     parseQuantifierArg Exists tl
 
-                _ ->
+                TokNot ->
                     parseNeg lst
+
+                _ ->
+                    parseAtom lst
 
         [] ->
             parseNeg lst
@@ -111,10 +114,10 @@ parseNeg lst =
                 parseNeg tail |> Result.map (\( ex, rem ) -> ( Neg ex, rem ))
 
             else
-                parseAtom lst
+                parseQuantifier lst
 
         [] ->
-            parseAtom lst
+            parseQuantifier lst
 
 
 parseAtom : List Token -> Result ParseError ( Expr, List Token )
@@ -346,7 +349,10 @@ checkPredicate domain declared ex =
                     Err ("Predicado " ++ name ++ " desconocido")
 
         Forall name sub ->
-            if Set.member name domain.domain then
+            if String.toList name |> List.head |> Maybe.map Char.isLower |> Maybe.withDefault False |> not then
+                Err ("Las variables deben empezar en minúscula (" ++ name ++ ")")
+
+            else if Set.member name domain.domain then
                 Err ("La variable " ++ name ++ " ya existe en el dominio, usa otro nombre")
 
             else if Set.member name declared then
@@ -356,7 +362,10 @@ checkPredicate domain declared ex =
                 checkPredicate domain (Set.insert name declared) sub |> Result.map (Forall name)
 
         Exists name sub ->
-            if Set.member name domain.domain then
+            if String.toList name |> List.head |> Maybe.map Char.isLower |> Maybe.withDefault False |> not then
+                Err ("Las variables deben empezar en minúscula (" ++ name ++ ")")
+
+            else if Set.member name domain.domain then
                 Err ("La variable " ++ name ++ " ya existe en el dominio, usa otro nombre")
 
             else if Set.member name declared then
@@ -369,8 +378,20 @@ checkPredicate domain declared ex =
 checkFunTree : Domain -> Set String -> FunTree -> Result String FunTree
 checkFunTree domain declared ftree =
     case ftree of
-        Atom _ ->
-            Ok ftree
+        Atom name ->
+            if String.toList name |> List.head |> Maybe.map Char.isLower |> Maybe.withDefault False then
+                -- Es variable
+                Ok ftree
+
+            else
+            -- Es valor
+            if
+                Set.member name domain.domain
+            then
+                Ok ftree
+
+            else
+                Err ("Valor " ++ name ++ " desconocido")
 
         Apply name args ->
             case Dict.get name domain.functions of
