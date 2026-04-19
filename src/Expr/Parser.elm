@@ -4,6 +4,7 @@ import Dict
 import Expr.Tokenizer exposing (..)
 import Expr.Types exposing (..)
 import Set exposing (Set)
+import Utils exposing (toResultAll)
 
 
 {-| Parse an expression
@@ -389,16 +390,3 @@ checkFunTree domain declared ftree =
 
                 Nothing ->
                     Err ("La función " ++ name ++ " no está definida")
-
-
-toResultAll : List (Result err ok) -> Result err (List ok)
-toResultAll lst =
-    case lst of
-        (Ok v) :: tl ->
-            toResultAll tl |> Result.map ((::) v)
-
-        (Err v) :: _ ->
-            Err v
-
-        [] ->
-            Ok []

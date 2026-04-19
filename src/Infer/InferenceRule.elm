@@ -5,7 +5,7 @@ import Dict
 import Expr.Types exposing (Expr)
 import Infer.Types exposing (InferenceRefs(..))
 import List exposing (head)
-import Match exposing (replaceAll, tryMatch)
+import Match2 exposing (emptyClues, matchAllTwice, replace)
 import Utils exposing (listProduct)
 
 
@@ -36,18 +36,17 @@ tryFromInferenceRuleAssumingCheck : Expr -> ( { number : Int, assum : Maybe Expr
 tryFromInferenceRuleAssumingCheck ex ( oex, rule ) =
     case oex.assum of
         Just assum ->
-            tryMatch assum rule.assum Dict.empty
-                |> Maybe.andThen (tryMatch oex.what rule.what)
-                |> Maybe.andThen (tryMatch ex rule.thesis)
-                |> Maybe.andThen (replaceAll rule.thesis)
-                |> Maybe.andThen
+            matchAllTwice [ assum, oex.what, ex ] [ rule.assum, rule.what, rule.thesis ] emptyClues
+                |> Result.andThen (replace rule.thesis)
+                |> Result.andThen
                     (\e ->
                         if e == ex then
-                            Just { name = rule.name, refs = OneRef oex.number }
+                            Ok { name = rule.name, refs = OneRef oex.number }
 
                         else
-                            Nothing
+                            Err ()
                     )
+                |> Result.toMaybe
 
         _ ->
             Nothing
@@ -90,17 +89,17 @@ tryFromInferenceFilterMatch1 :
     -> ( { number : Int, what : Expr }, { name : String, what : Expr, thesis : Expr } )
     -> Maybe { refs : InferenceRefs, name : String }
 tryFromInferenceFilterMatch1 ex ( oex, pat ) =
-    tryMatch oex.what pat.what Dict.empty
-        |> Maybe.andThen (tryMatch ex pat.thesis)
-        |> Maybe.andThen (replaceAll pat.thesis)
-        |> Maybe.andThen
+    matchAllTwice [ oex.what, ex ] [ pat.what, pat.thesis ] emptyClues
+        |> Result.andThen (replace pat.thesis)
+        |> Result.andThen
             (\e ->
                 if e == ex then
-                    Just { name = pat.name, refs = OneRef oex.number }
+                    Ok { name = pat.name, refs = OneRef oex.number }
 
                 else
-                    Nothing
+                    Err ()
             )
+        |> Result.toMaybe
 
 
 tryFromInferenceFilterMatch2 :
@@ -108,15 +107,14 @@ tryFromInferenceFilterMatch2 :
     -> ( { number : Int, what : Expr }, ( { number : Int, what : Expr }, { name : String, what1 : Expr, what2 : Expr, thesis : Expr } ) )
     -> Maybe { refs : InferenceRefs, name : String }
 tryFromInferenceFilterMatch2 ex ( e1, ( e2, pat ) ) =
-    tryMatch e1.what pat.what1 Dict.empty
-        |> Maybe.andThen (tryMatch e2.what pat.what2)
-        |> Maybe.andThen (tryMatch ex pat.thesis)
-        |> Maybe.andThen (replaceAll pat.thesis)
-        |> Maybe.andThen
+    matchAllTwice [ e1.what, e2.what, ex ] [ pat.what1, pat.what2, pat.thesis ] emptyClues
+        |> Result.andThen (replace pat.thesis)
+        |> Result.andThen
             (\e ->
                 if e == ex then
-                    Just { name = pat.name, refs = TwoRefs e1.number e2.number }
+                    Ok { name = pat.name, refs = TwoRefs e1.number e2.number }
 
                 else
-                    Nothing
+                    Err ()
             )
+        |> Result.toMaybe

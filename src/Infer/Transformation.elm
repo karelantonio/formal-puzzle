@@ -7,7 +7,7 @@ import AllRules exposing (allEquivalences, allImplications)
 import Dict
 import Expr.Types exposing (Expr(..))
 import Infer.Types exposing (Transformation(..))
-import Match exposing (replaceAll, tryMatch)
+import Match2 exposing (emptyClues, matchAllTwice, replace)
 
 
 wasApplied : Transformation -> Expr -> Expr -> Bool
@@ -52,18 +52,24 @@ wasAppliedRepl ( p1, p2 ) ( e1, e2 ) =
             ( Iff a1 b1, Iff a2 b2 ) ->
                 wasAppliedRepl ( p1, p2 ) ( a1, a2 ) |> Basics.xor (wasAppliedRepl ( p1, p2 ) ( b1, b2 ))
 
+            ( Forall name1 sub1, Forall name2 sub2 ) ->
+                name1 == name2 && wasAppliedRepl ( p1, p2 ) ( sub1, sub2 )
+
+            ( Exists name1 sub1, Forall name2 sub2 ) ->
+                name1 == name2 && wasAppliedRepl ( p1, p2 ) ( sub1, sub2 )
+
             ( _, _ ) ->
                 False
 
 
 wasLiterallyAppliedReplHere : ( Expr, Expr ) -> ( Expr, Expr ) -> Bool
 wasLiterallyAppliedReplHere ( p1, p2 ) ( e1, e2 ) =
-    case Maybe.andThen (tryMatch e2 p2) (tryMatch e1 p1 Dict.empty) of
-        Just v ->
-            Just e2 == replaceAll p2 v
+    case Result.andThen (replace p2) (matchAllTwice [ e1, e2 ] [ p1, p2 ] emptyClues) of
+        Ok v ->
+            e2 == v
 
         -- Just e2 == replaceAll p2 v
-        Nothing ->
+        Err _ ->
             False
 
 

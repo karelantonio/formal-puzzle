@@ -39,7 +39,7 @@ makeLevel info =
         , theory = info.theory
         , ded_text = ""
         , error_msg = Nothing
-        , steps = []
+        , steps = [ Assume Nothing ]
         , domain = extractDomainFromTheory (info.goal :: info.theory)
         }
 

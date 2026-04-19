@@ -43,6 +43,19 @@ isNothing e =
             True
 
 
+toResultAll : List (Result err ok) -> Result err (List ok)
+toResultAll lst =
+    case lst of
+        (Ok v) :: tl ->
+            toResultAll tl |> Result.map ((::) v)
+
+        (Err v) :: _ ->
+            Err v
+
+        [] ->
+            Ok []
+
+
 
 -- Given the ID, create a task that scrolls that element to bottom
 
