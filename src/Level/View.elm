@@ -42,11 +42,61 @@ bottomBar dedtext =
                 , value dedtext
                 , onInput (\t -> DeductionTextChanged t)
                 , class "exercise-bottom-bar-input"
+                , id "exercise-bottom-bar-input"
                 , type_ "text"
                 ]
                 []
             , div [ class "exercise-bottom-bar-buttons" ]
-                [ div [ id "separator" ] []
+                [ input
+                    [ type_ "button"
+                    , class "exercise-bottom-bar-btn"
+                    , onClick (InsertPressed "∀")
+                    , value "∀"
+                    ]
+                    []
+                , input
+                    [ type_ "button"
+                    , class "exercise-bottom-bar-btn"
+                    , onClick (InsertPressed "∃")
+                    , value "∃"
+                    ]
+                    []
+                , input
+                    [ type_ "button"
+                    , class "exercise-bottom-bar-btn"
+                    , onClick (InsertPressed "-")
+                    , value "¬"
+                    ]
+                    []
+                , input
+                    [ type_ "button"
+                    , class "exercise-bottom-bar-btn"
+                    , onClick (InsertPressed "->")
+                    , value "⟹"
+                    ]
+                    []
+                , input
+                    [ type_ "button"
+                    , class "exercise-bottom-bar-btn"
+                    , onClick (InsertPressed "<->")
+                    , value "⟺"
+                    ]
+                    []
+                , input
+                    [ type_ "button"
+                    , class "exercise-bottom-bar-btn"
+                    , onClick (InsertPressed "&")
+                    , value "∧"
+                    ]
+                    []
+                , input
+                    [ type_ "button"
+                    , class "exercise-bottom-bar-btn"
+                    , onClick (InsertPressed "|")
+                    , value "∨"
+                    ]
+                    []
+                , div [ id "separator" ] []
                 , input
                     [ type_ "button"
                     , class "exercise-bottom-bar-btn"

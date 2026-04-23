@@ -87,8 +87,13 @@ mapDoc fn doc =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions m =
+    case m of
+        AllLevelsModelV _ ->
+            Sub.none
+
+        LevelModelV inst ->
+            Level.Update.subscriptions inst |> Sub.map LevelMsgV
 
 
 {-| Main entry point of the program

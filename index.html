@@ -25,6 +25,20 @@ app.ports.scrollToBottom.subscribe(function(id){
     elem.scroll(0, elem.scrollHeight);
   });
 });
+app.ports.insertInInput.subscribe(function(args){
+  requestAnimationFrame(function(_){
+    var elem = document.getElementById(args[0]);
+    if(!elem){
+      return;
+    }
+    var txt = elem.value;
+    if(!txt){
+      txt="";
+    }
+    var res = txt.substring(0,elem.selectionStart) + args[1] + txt.substring(elem.selectionEnd,txt.length);
+    app.ports.doneInsertInInput.send(res);
+  });
+});
 </script>
 </body>
 </html>

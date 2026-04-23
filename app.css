@@ -53,6 +53,7 @@ body {
   width: 98%;
   margin: 4px 1%;
   display: flex;
+  overflow: auto;
 }
 
 .exercise-bottom-bar-buttons #separator {

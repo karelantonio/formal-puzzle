@@ -61,3 +61,18 @@ toResultAll lst =
 
 
 port scrollToBottom : String -> Cmd msg
+
+
+
+-- Given the ID, insert into the given input field (where the cursor is located)
+-- the given text
+
+
+port insertInInput : ( String, String ) -> Cmd msg
+
+
+
+-- Done inserting in input, get the result
+
+
+port doneInsertInInput : (String -> msg) -> Sub msg

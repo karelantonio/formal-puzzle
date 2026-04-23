@@ -53,3 +53,4 @@ type Msg
     | AddPressed
     | TheoryPressed
     | ExprPressed Expr
+    | InsertPressed String

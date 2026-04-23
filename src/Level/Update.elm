@@ -1,4 +1,4 @@
-module Level.Update exposing (update)
+module Level.Update exposing (subscriptions, update)
 
 import Expr.Parser exposing (parse)
 import Expr.Types exposing (Expr(..), toString)
@@ -53,6 +53,9 @@ updateEx msg ex =
 
         ExprPressed what ->
             ( Ex { ex | ded_text = toString what, error_msg = Nothing }, Cmd.none )
+
+        InsertPressed val ->
+            ( Ex ex, Utils.insertInInput ( "exercise-bottom-bar-input", val ) )
 
 
 updateHandleParsed : ExT -> Expr -> ( Model, Cmd Msg )
@@ -264,3 +267,12 @@ currNumber lst =
 
         [] ->
             Nothing
+
+
+
+-- Receive messages from outside
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Utils.doneInsertInInput DeductionTextChanged
