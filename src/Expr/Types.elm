@@ -233,7 +233,7 @@ toStringFunTree ftr =
 toStringFunTreePar : FunTree -> String
 toStringFunTreePar ftr =
     case ftr of
-        Apply "+" [ _ ] ->
+        Apply "+" [ _, _ ] ->
             "(" ++ toStringFunTree ftr ++ ")"
 
         _ ->

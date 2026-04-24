@@ -56,51 +56,22 @@ levels =
       }
     , { name = "Suma de pares"
       , descr =
-            [ Text "Todos saben que la suma de un número par con otro número par es par, pero entre saberlo y demostrarlo hay una gran diferencia."
-            , Text "Decimos que un número 'x' es par, sí y solo sí existe otro 'y' tal que y+y=x, en otras palabras:"
-            , Theory <|
-                (parseNoCheckPred "∀(x)(par(x)<->∃(y)y+y=x)"
-                    |> Result.withDefault (Ident "[redacted]")
-                )
-            , Text "Donde s(a,b) es la suma de a y b. Y es una función que cumple los siguientes axiomas:"
-            , Theory <|
-                (parseNoCheckPred "∀(a)∀(b)∀(c)∀(d) (a=c&b=d->a+b=c+d)"
-                    |> Result.withDefault (Ident "[redacted]")
-                )
-            , Theory <|
-                (parseNoCheckPred "∀(x) x+0=x"
-                    |> Result.withDefault (Ident "[redacted]")
-                )
-            , Theory <|
-                (parseNoCheckPred "∀(x)∀(y)∃(z) x+y=z"
-                    |> Result.withDefault (Ident "[redacted]")
-                )
-            , Theory <|
-                (parseNoCheckPred "∀(a)∀(b) a+b=b+a"
-                    |> Result.withDefault (Ident "[redacted]")
-                )
-            , Text "Además, junto con la función sucesor cumplen:"
-            , Theory <|
-                (parseNoCheckPred "∀(x)∀(y) x+suc(y)=suc(x+y)"
-                    |> Result.withDefault (Ident "[redacted]")
-                )
-            , Theory <|
-                (parseNoCheckPred "∀(x)∃(y) suc(x)=y"
-                    |> Result.withDefault (Ident "[redacted]")
-                )
-            , Theory <|
-                (parseNoCheckPred "-∃(x)suc(x) = 0"
-                    |> Result.withDefault (Ident "[redacted]")
-                )
-            , Theory <|
-                (parseNoCheckPred "∀(x)∀(y)(x=y -> suc(x) = suc(y))"
-                    |> Result.withDefault (Ident "[redacted]")
-                )
-            ]
+            Text "Todos saben que la suma de un número par con otro número par es par, pero entre saberlo y demostrarlo hay una gran diferencia."
+                :: Text "Decimos que un número 'x' es par, sí y solo sí existe otro 'y' tal que y+y=x, en otras palabras:"
+                :: (Theory <|
+                        (parseNoCheckPred "∀(x)(par(x)<->∃(y)y+y=x)"
+                            |> Result.withDefault (Ident "[redacted]")
+                        )
+                   )
+                :: Text "Axiomas de la igualdad:"
+                :: equalityAxioms
+                ++ Text "Axiomas del sucesor:"
+                :: successorAxioms
+                ++ Text "Axiomas de la suma:"
+                :: sumAxioms
       , goal =
-            Forall "x" <|
-                Forall "y" <|
-                    Implies (And (Predicate "par" [ Atom "x" ]) (Predicate "par" [ Atom "y" ])) (Predicate "par" [ Apply "s" [ Atom "x", Atom "y" ] ])
+            parseNoCheckPred "∀(x)∀(y)(par(x)&par(y)->par(x+y))"
+                |> Result.withDefault (Ident "[redacted]")
       , approx_steps = 2
       }
     ]
@@ -112,3 +83,41 @@ levelDescription lvl =
         [ h4 [ class "all-levels-ui-item-title" ] [ text lvl.name ]
         , p [] [ text ("Cantidad de pasos (aprx.): " ++ String.fromInt lvl.approx_steps) ]
         ]
+
+
+
+-- Common axioms
+
+
+equalityAxioms : List DescrItem
+equalityAxioms =
+    [ Theory (parseNoCheckPred "∀(x)x=x" |> Result.withDefault (Ident "[redacted]"))
+    , Theory (parseNoCheckPred "∀(x)∀(y)(x=y->y=x)" |> Result.withDefault (Ident "[redacted]"))
+    , Theory (parseNoCheckPred "∀(x)∀(y)∀(z)(x=y&y=z->x=z)" |> Result.withDefault (Ident "[redacted]"))
+    , Theory (parseNoCheckPred "∀(x)∀(y)∀(z)(x=y&y=z->x=z)" |> Result.withDefault (Ident "[redacted]"))
+    ]
+
+
+successorAxioms : List DescrItem
+successorAxioms =
+    [ Theory (parseNoCheckPred "∀(x)∃(y)(suc(x)=y)" |> redacted)
+    , Theory (parseNoCheckPred "-∃(x)(suc(x)=0)" |> redacted)
+    , Theory (parseNoCheckPred "∀(x)∀(y)(x=y -> suc(x)=suc(y))" |> redacted)
+    , Theory (parseNoCheckPred "∀(x)∀(y)(suc(x)=suc(y) -> x=y)" |> redacted)
+    ]
+
+
+sumAxioms : List DescrItem
+sumAxioms =
+    [ Theory (parseNoCheckPred "∀(x)∀(y)∃(z)x+y=z" |> redacted)
+    , Theory (parseNoCheckPred "∀(x)∀(y)∀(z)∀(w) ((x=y & z=w)->(x+z=y+w))" |> redacted)
+    , Theory (parseNoCheckPred "∀(x)∀(y)x+y=y+x" |> redacted)
+    , Theory (parseNoCheckPred "∀(x)∀(y)∀(z) (x+y)+z=x+(y+z)" |> redacted)
+    , Theory (parseNoCheckPred "∀(x)∀(y) x+suc(y)=suc(x+y) " |> redacted)
+    , Theory (parseNoCheckPred "∀(x) x+0=x " |> redacted)
+    ]
+
+
+redacted : Result x Expr -> Expr
+redacted =
+    Result.withDefault (Ident "[redacted]")

@@ -78,6 +78,9 @@ allImplications =
     , pr "L40" "A&B" "A"
     , pr "L41" "A" "B->A"
     , pr "L42" "∀(x)A(x)" "A(T)"
+    , pr "L42" "∀(x)∀(y)A2(x,y)" "A2(T,R)"
+    , pr "L42" "∀(x)∀(y)∀(z)A3(x,y,z)" "A3(T,R,S)"
+    , pr "L42" "∀(x)∀(y)∀(z)∀(w)A4(x,y,z,w)" "A4(T,R,S,P)"
     , pr "L50" "A(T)" "∃(x)A(x)"
     , pr "L51" "∀(x)A(x)" "∃(x)A(x)"
     , pr "L56" "∃(x)(A(x)&B(x))" "∃(x)A(x)&∃(x)B(x)"
@@ -163,8 +166,8 @@ parseAndUnwrap s =
 
 commonDomain : Domain
 commonDomain =
-    { domain = Set.singleton "T"
+    { domain = Set.fromList [ "T", "S", "R", "P", "Q" ]
     , functions = Dict.singleton "f" 1
-    , predicates = Dict.fromList [ ( "A", 1 ), ( "B", 1 ), ( "C", 1 ), ( "A2", 2 ), ( "B2", 2 ), ( "C2", 2 ), ( "P", 1 ), ( "Q", 1 ), ( "R", 1 ), ( "P2", 2 ), ( "Q2", 2 ), ( "R2", 2 ) ]
+    , predicates = Dict.fromList [ ( "A", 1 ), ( "B", 1 ), ( "C", 1 ), ( "A2", 2 ), ( "B2", 2 ), ( "C2", 2 ), ( "P", 1 ), ( "Q", 1 ), ( "R", 1 ), ( "P2", 2 ), ( "Q2", 2 ), ( "R2", 2 ), ( "A3", 3 ), ( "A4", 4 ) ]
     , propositions = Set.fromList [ "A", "B", "C", "D" ]
     }

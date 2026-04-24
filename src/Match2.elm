@@ -508,9 +508,9 @@ replaceAllInFT dik clues ft =
                 ( Just val, _ ) ->
                     replaceAllInFTEvenMore clues val
 
-                ( _, Just newname ) ->
-                    Atom newname
-
+                -- Do not replace variable names
+                -- ( _, Just newname ) ->
+                --     Atom newname
                 _ ->
                     ft
 
