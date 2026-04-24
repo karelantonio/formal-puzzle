@@ -49,7 +49,7 @@ exprToMathMLTag ex =
                 _ ->
                     node "mi" [] [ text name ]
                         :: node "mo" [] [ text "(" ]
-                        :: joinWith (node "mo" [] [ text "," ]) (List.map funTreeToMathMLTag args |> List.concat)
+                        :: (joinWith [ node "mo" [] [ text "," ] ] (List.map funTreeToMathMLTag args) |> List.concat)
                         ++ [ node "mo" [] [ text ")" ] ]
 
         Forall name sub ->
@@ -85,7 +85,7 @@ funTreeToMathMLTag tr =
         Apply name args ->
             node "mi" [] [ text name ]
                 :: node "mo" [] [ text "(" ]
-                :: joinWith (node "mo" [] [ text "," ]) (List.map funTreeToMathMLTag args |> List.concat)
+                :: ((joinWith [ node "mo" [] [ text "," ] ] <| List.map funTreeToMathMLTag args) |> List.concat)
                 ++ [ node "mo" [] [ text ")" ] ]
 
 
