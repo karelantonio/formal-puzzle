@@ -8,6 +8,7 @@ module Expr.Types exposing
     , emptyDomain
     , extractDomainFromTheory
     , isSimple
+    , isVariable
     , parToString
     , toString
     , toStringFunTree
@@ -232,3 +233,10 @@ arity tr =
 
         Apply _ arg ->
             List.length arg
+
+
+{-| Check if a given name belongs to a variable or a value
+-}
+isVariable : String -> Bool
+isVariable name =
+    String.toList name |> List.head |> Maybe.map Char.isLower |> Maybe.withDefault False

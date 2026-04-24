@@ -1,7 +1,8 @@
 module Match2 exposing (emptyClues, match, matchAll, matchAllTwice, replace)
 
 import Dict exposing (Dict)
-import Expr.Types exposing (Expr(..), FunTree(..))
+import Expr.Types exposing (Domain, Expr(..), FunTree(..), isVariable)
+import Set exposing (Set)
 import Utils exposing (toResultAll)
 
 
@@ -59,7 +60,9 @@ match ex pat clues =
             case Dict.get name clues.propositions of
                 Just v ->
                     if prop == v then
-                        Ok clues
+                        -- Ok clues
+                        -- Take care here
+                        checkTheKnownVariablesThing clues [] prop
 
                     else
                         -- Do not match
@@ -111,7 +114,9 @@ match ex pat clues =
                     Just saved ->
                         -- They must be equal
                         if saved == left then
-                            Ok clues
+                            -- Ok clues
+                            -- Also take care here
+                            checkTheKnownVariablesThing clues (Dict.get name clues.predArgNames |> Maybe.withDefault []) left
 
                         else
                             Err ()
@@ -143,6 +148,86 @@ match ex pat clues =
 
         _ ->
             Err ()
+
+
+checkTheKnownVariablesThing : Clues -> List String -> Expr -> Result () Clues
+checkTheKnownVariablesThing clues args ex =
+    let
+        revnames =
+            Dict.toList clues.variables |> List.map (\( a, b ) -> ( b, a )) |> Dict.fromList
+    in
+    let
+        vars =
+            collectUsedVariables ex Set.empty
+    in
+    let
+        mappedVars =
+            Set.toList vars |> List.filterMap (\n -> Dict.get n revnames) |> Set.fromList
+    in
+    let
+        providedArgs =
+            Set.fromList args
+    in
+    if Set.intersect mappedVars providedArgs == providedArgs then
+        Ok clues
+
+    else
+        Err ()
+
+
+collectUsedVariables : Expr -> Set String -> Set String
+collectUsedVariables ex st =
+    case ex of
+        One ->
+            st
+
+        Zero ->
+            st
+
+        Ident _ ->
+            st
+
+        Neg e ->
+            collectUsedVariables e st
+
+        And l r ->
+            collectUsedVariables l st |> collectUsedVariables r
+
+        Or l r ->
+            collectUsedVariables l st |> collectUsedVariables r
+
+        Implies l r ->
+            collectUsedVariables l st |> collectUsedVariables r
+
+        Iff l r ->
+            collectUsedVariables l st |> collectUsedVariables r
+
+        Predicate name sub ->
+            collectUsedVariablesFT (Apply name sub) st
+
+        Forall name sub ->
+            collectUsedVariables sub Set.empty
+                |> Set.remove name
+                |> Set.union st
+
+        Exists name sub ->
+            collectUsedVariables sub Set.empty
+                |> Set.remove name
+                |> Set.union st
+
+
+collectUsedVariablesFT : FunTree -> Set String -> Set String
+collectUsedVariablesFT ft st =
+    case ft of
+        Atom n ->
+            if isVariable n then
+                Set.insert n st
+
+            else
+                st
+
+        Apply _ args ->
+            List.foldl collectUsedVariablesFT st args
 
 
 replaceInOriginalE : Dict String FunTree -> Expr -> Expr

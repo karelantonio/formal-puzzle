@@ -47,8 +47,8 @@ allEquivalences =
     -- the reason is there is a known bug in the matcher
     -- that does not care is an expression has free variable
     -- or not
-    , pr "L55" "∃(x)(A(x)|B(x))" "∃(x)A(x)|∃(x)B(x)"
-    , pr "L57" "∀(x)(A(x)&B(x))" "∀(x)A(x)&∀(x)A(x)"
+    , pr "L55" "∃(x)(A(x)|B(x))" "∃(x)A(x)|∃(y)B(y)"
+    , pr "L57" "∀(x)(A(x)&B(x))" "∀(x)A(x)&∀(y)A(y)"
     , pr "L59" "∀(x)∀(y)A(x,y)" "∀(y)∀(x)A(x,y)"
     , pr "L60" "∃(x)∃(y)A(x,y)" "∃(y)∃(x)A(x,y)"
 

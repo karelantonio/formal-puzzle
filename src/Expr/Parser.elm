@@ -349,7 +349,7 @@ checkPredicate domain declared ex =
                     Err ("Predicado " ++ name ++ " desconocido")
 
         Forall name sub ->
-            if String.toList name |> List.head |> Maybe.map Char.isLower |> Maybe.withDefault False |> not then
+            if isVariable name |> not then
                 Err ("Las variables deben empezar en minúscula (" ++ name ++ ")")
 
             else if Set.member name domain.domain then
@@ -362,7 +362,7 @@ checkPredicate domain declared ex =
                 checkPredicate domain (Set.insert name declared) sub |> Result.map (Forall name)
 
         Exists name sub ->
-            if String.toList name |> List.head |> Maybe.map Char.isLower |> Maybe.withDefault False |> not then
+            if isVariable name |> not then
                 Err ("Las variables deben empezar en minúscula (" ++ name ++ ")")
 
             else if Set.member name domain.domain then
