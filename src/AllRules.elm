@@ -41,18 +41,16 @@ allEquivalences =
     , pr "L45" "∀(x)A(x)" "-∃(x)-A(x)"
     , pr "L46" "-∀(x)A(x)" "∃(x)-A(x)"
     , pr "L47" "-∀(x)-A(x)" "∃(x)A(x)"
-
-    -- pr "L48", "L49", "L50", "L51", "L52", "L53", "L54", "L62"
-    -- must be added manually
-    -- the reason is there is a known bug in the matcher
-    -- that does not care is an expression has free variable
-    -- or not
+    , pr "L48" "∀(x)(A(x)|B)" "∀(x)A(x)|B"
+    , pr "L49" "∃(x)(A(x)&B)" "∃(x)A(x)&B"
+    , pr "L52" "∀(x)(A(x)&B)" "∀(x)A(x)&B"
+    , pr "L53" "∃(x)(A(x)|B)" "∃(x)A(x)|B"
+    , pr "L54" "∀(x)(A->B(x))" "A->∀(x)B(x)"
     , pr "L55" "∃(x)(A(x)|B(x))" "∃(x)A(x)|∃(y)B(y)"
     , pr "L57" "∀(x)(A(x)&B(x))" "∀(x)A(x)&∀(y)A(y)"
-    , pr "L59" "∀(x)∀(y)A(x,y)" "∀(y)∀(x)A(x,y)"
-    , pr "L60" "∃(x)∃(y)A(x,y)" "∃(y)∃(x)A(x,y)"
-
-    -- TODO: Add the remaining rules
+    , pr "L59" "∀(x)∀(y)A2(x,y)" "∀(y)∀(x)A2(x,y)"
+    , pr "L60" "∃(x)∃(y)A2(x,y)" "∃(y)∃(x)A2(x,y)"
+    , pr "L62" "∃(x)(A(x)->B)" "∀(x)A(x)->B"
     ]
 
 
@@ -80,9 +78,11 @@ allImplications =
     , pr "L40" "A&B" "A"
     , pr "L41" "A" "B->A"
     , pr "L42" "∀(x)A(x)" "A(T)"
+    , pr "L50" "A(T)" "∃(x)A(x)"
+    , pr "L51" "∀(x)A(x)" "∃(x)A(x)"
     , pr "L56" "∃(x)(A(x)&B(x))" "∃(x)A(x)&∃(x)B(x)"
     , pr "L58" "∀(x)A(x)|∀(x)B(x)" "∀(x)(A(x)|B(x))"
-    , pr "L61" "∃(x)∀(y)A(x,y)" "∀(y)∃(x)A(x,y)"
+    , pr "L61" "∃(x)∀(y)A2(x,y)" "∀(y)∃(x)A2(x,y)"
     , pr "L63" "∀(x)A(x)|∀(y)B(y)" "∀(x)∀(y)(A(x)|B(y))"
     ]
 
@@ -155,6 +155,10 @@ parseAndUnwrap s =
             -- Workaround, but should reach here
             -- todo ("Not implemented (" ++ Debug.toString err ++ ")")
             Ident "[redacted]"
+
+
+
+-- Debug.todo ("e: " ++ Debug.toString e)
 
 
 commonDomain : Domain

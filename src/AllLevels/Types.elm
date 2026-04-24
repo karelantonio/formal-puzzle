@@ -68,6 +68,9 @@ levels =
                                     (Predicate "=" [ Apply "s" [ Atom "a", Atom "b" ], Apply "s" [ Atom "c", Atom "d" ] ])
             , Theory <|
                 Forall "x" <|
+                    Predicate "=" [ Apply "s" [ Atom "0", Atom "x" ], Atom "x" ]
+            , Theory <|
+                Forall "x" <|
                     Forall "y" <|
                         Exists "z" <|
                             Predicate "=" [ Apply "s" [ Atom "x", Atom "y" ], Atom "z" ]

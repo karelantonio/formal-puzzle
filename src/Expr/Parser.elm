@@ -152,8 +152,8 @@ neg =
 qnt : Recognizer Expr Token
 qnt =
     choice3
-        (chain3 (\_ -> Forall) (litToken TokForall) qntArg (lazy (\_ -> qnt)))
-        (chain3 (\_ -> Exists) (litToken TokExists) qntArg (lazy (\_ -> qnt)))
+        (chain3 (\_ -> Forall) (litToken TokForall) qntArg (lazy (\_ -> neg)))
+        (chain3 (\_ -> Exists) (litToken TokExists) qntArg (lazy (\_ -> neg)))
         atom
 
 
