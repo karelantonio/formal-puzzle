@@ -1,7 +1,7 @@
 module Level.Update exposing (subscriptions, update)
 
 import Expr.Parser exposing (parse)
-import Expr.Types exposing (Expr(..), toString)
+import Expr.Types exposing (Expr(..), Loc(..), toString)
 import Infer.Hypothesis
 import Infer.InferenceRule
 import Infer.Monotony
@@ -33,7 +33,7 @@ updateEx msg ex =
                 Err err ->
                     ( Ex
                         { ex
-                            | error_msg = err.msg ++ " (Posición: " ++ String.fromInt (err.location + 1) ++ ")" |> Just
+                            | error_msg = err.msg ++ " (Posición: " ++ locationToString err.location ++ ")" |> Just
                         }
                     , Utils.scrollToBottom "exercise-ui"
                     )
@@ -49,13 +49,23 @@ updateEx msg ex =
                         ( Ex { ex | steps = addAssumeToSteps (Just parsed_ex) ex.steps }, Cmd.none )
 
                     Err err ->
-                        ( Ex { ex | error_msg = err.msg ++ " (Posición: " ++ String.fromInt err.location ++ ")" |> Just }, Cmd.none )
+                        ( Ex { ex | error_msg = err.msg ++ " (Posición: " ++ locationToString err.location ++ ")" |> Just }, Cmd.none )
 
         ExprPressed what ->
             ( Ex { ex | ded_text = toString what, error_msg = Nothing }, Cmd.none )
 
         InsertPressed val ->
             ( Ex ex, Utils.insertInInput ( "exercise-bottom-bar-input", val ) )
+
+
+locationToString : Loc -> String
+locationToString loc =
+    case loc of
+        Pos p ->
+            String.fromInt (p + 1)
+
+        End ->
+            "al final"
 
 
 updateHandleParsed : ExT -> Expr -> ( Model, Cmd Msg )

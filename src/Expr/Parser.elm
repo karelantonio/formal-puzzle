@@ -1,8 +1,10 @@
-module Expr.Parser exposing (parse)
+module Expr.Parser exposing (atom, atomPredic, parse, parseNoCheckPred)
 
+import Combinators exposing (Addr(..), Recognizer, accept, chain, chain3, choice, choice3, end, expect, lazy, map, maybe, maybeDefault)
 import Dict
 import Expr.Tokenizer exposing (..)
 import Expr.Types exposing (..)
+import List exposing (concat)
 import Set exposing (Set)
 import Utils exposing (toResultAll)
 
@@ -16,278 +18,250 @@ parse domain s =
 
 checkMapping : Domain -> Expr -> Result ParseError Expr
 checkMapping domain ex =
-    checkPredicate domain Set.empty ex |> Result.mapError (\msg -> { location = 0, msg = msg })
+    checkPredicate domain Set.empty ex |> Result.mapError (\msg -> { location = Expr.Types.End, msg = msg })
 
 
 parseNoCheckPred : String -> Result ParseError Expr
 parseNoCheckPred s =
     let
-        toks =
-            tokenize 0 (String.toList s)
+        tokens =
+            tokenize 1 (String.toList s)
     in
-    case toks of
-        [] ->
-            Err { location = 0, msg = "Expression is empty" }
-
-        _ ->
-            case parseIff toks of
-                Ok ( ex, [] ) ->
-                    Ok ex
-
-                Ok ( _, head :: _ ) ->
-                    Err { location = head.pos, msg = "Expected ->, <->, &, | or EOF, but found: " ++ tokenKindToString head.kind }
-
-                Err err ->
-                    Err err
-
-
-parseIff : List Token -> Result ParseError ( Expr, List Token )
-parseIff lst =
-    parseBinOp (\t -> t.kind == TokIff) Iff parseImplies lst
-
-
-parseImplies : List Token -> Result ParseError ( Expr, List Token )
-parseImplies lst =
-    parseBinOp (\t -> t.kind == TokImplies) Implies parseOr lst
-
-
-parseOr : List Token -> Result ParseError ( Expr, List Token )
-parseOr lst =
-    parseBinOp (\t -> t.kind == TokOr) Or parseAnd lst
-
-
-parseAnd : List Token -> Result ParseError ( Expr, List Token )
-parseAnd lst =
-    parseBinOp (\t -> t.kind == TokAnd) And parseQuantifier lst
-
-
-parseQuantifier : List Token -> Result ParseError ( Expr, List Token )
-parseQuantifier lst =
-    case lst of
-        hd :: tl ->
-            case hd.kind of
-                TokForall ->
-                    parseQuantifierArg Forall tl
-
-                TokExists ->
-                    parseQuantifierArg Exists tl
-
-                TokNot ->
-                    parseNeg lst
-
-                _ ->
-                    parseAtom lst
-
-        [] ->
-            parseNeg lst
-
-
-parseQuantifierArg : (String -> Expr -> Expr) -> List Token -> Result ParseError ( Expr, List Token )
-parseQuantifierArg fn lst =
-    case lst of
-        lpar :: name :: rpar :: tl ->
-            case ( lpar.kind, name.kind, rpar.kind ) of
-                ( TokLPar, TokIdent x, TokRPar ) ->
-                    parseQuantifier tl |> Result.map (Tuple.mapFirst (fn x))
-
-                ( TokLBrac, TokIdent x, TokRBrac ) ->
-                    parseQuantifier tl |> Result.map (Tuple.mapFirst (fn x))
-
-                ( TokLPar, TokNum x, TokRPar ) ->
-                    parseQuantifier tl |> Result.map (Tuple.mapFirst (fn x))
-
-                ( TokLBrac, TokNum x, TokRBrac ) ->
-                    parseQuantifier tl |> Result.map (Tuple.mapFirst (fn x))
-
-                _ ->
-                    Err { location = lpar.pos, msg = "Expected: (NAME)" }
-
-        _ ->
-            Err { location = 0, msg = "Expected: (NAME)" }
-
-
-parseNeg : List Token -> Result ParseError ( Expr, List Token )
-parseNeg lst =
-    case lst of
-        tok :: tail ->
-            if tok.kind == TokNot then
-                parseNeg tail |> Result.map (\( ex, rem ) -> ( Neg ex, rem ))
-
-            else
-                parseQuantifier lst
-
-        [] ->
-            parseQuantifier lst
-
-
-parseAtom : List Token -> Result ParseError ( Expr, List Token )
-parseAtom lst =
-    case lst of
-        tok :: body ->
-            case tok.kind of
-                TokIdent name ->
-                    -- It may be a predicate
-                    case body of
-                        lpar :: tl ->
-                            if lpar.kind == TokLPar || lpar.kind == TokLBrac || lpar.kind == TokLSqBrac then
-                                parseFunTreeArgsPar (lpar :: tl) |> Result.map (Tuple.mapFirst (Predicate name))
-
-                            else
-                                Ok ( Ident name, body )
-
-                        [] ->
-                            Ok ( Ident name, body )
-
-                TokNum "1" ->
-                    Ok ( One, body )
-
-                TokNum "0" ->
-                    Ok ( Zero, body )
-
-                TokLPar ->
-                    parseAtomPar TokRPar body
-
-                TokLBrac ->
-                    parseAtomPar TokRBrac body
-
-                TokLSqBrac ->
-                    parseAtomPar TokRSqBrac body
-
-                knd ->
-                    Err { location = tok.pos, msg = "Expected IDENTIFIER, 1, 0, (, [, {, -, ∀, ∃, but found: " ++ tokenKindToString knd }
-
-        _ ->
-            Err { location = 0, msg = "Expected IDENTIFIER, 0, 1, (, [, {, -, ∀, ∃, but found EOF" }
-
-
-parseAtomPar : TokenKind -> List Token -> Result ParseError ( Expr, List Token )
-parseAtomPar rpar lst =
-    case parseIff lst of
-        Ok ( ex, { pos, kind } :: tail ) ->
-            if kind == rpar then
-                Ok ( ex, tail )
-
-            else
-                Err { location = pos, msg = "Expected " ++ tokenKindToString rpar ++ " but found " ++ tokenKindToString kind }
-
-        Ok ( _, [] ) ->
-            Err { location = 0, msg = "Expected " ++ tokenKindToString rpar ++ " but found EOF" }
+    case goal .pos tokens of
+        Ok ( e, _ ) ->
+            Ok e
 
         Err err ->
-            Err err
+            Err { location = addr2loc err.addr, msg = Set.fromList err.expected |> Set.toList |> String.join ", " |> (++) "Se esperaba: " }
 
 
-parseFunTree : List Token -> Result ParseError ( FunTree, List Token )
-parseFunTree lst =
-    case lst of
-        { kind, pos } :: tl ->
-            case kind of
-                TokIdent name ->
-                    case tl of
-                        snd :: _ ->
-                            if snd.kind == TokLPar || snd.kind == TokLBrac || snd.kind == TokLSqBrac then
-                                parseFunTreeArgsPar tl |> Result.map (Tuple.mapFirst (Apply name))
+addr2loc : Addr -> Loc
+addr2loc a =
+    case a of
+        Combinators.Pos p ->
+            Expr.Types.Pos p
 
-                            else
-                                Ok ( Atom name, tl )
+        Combinators.End ->
+            Expr.Types.End
 
-                        _ ->
-                            Ok ( Atom name, tl )
 
-                TokNum name ->
-                    case tl of
-                        snd :: _ ->
-                            if snd.kind == TokLPar || snd.kind == TokLBrac || snd.kind == TokLSqBrac then
-                                parseFunTreeArgsPar tl |> Result.map (Tuple.mapFirst (Apply name))
 
-                            else
-                                Ok ( Atom name, tl )
+-- The (pseudo) BNF of the expressions
+--
+-- goal   : ^ expr $
+--
+-- expr   : iff
+--
+-- iff    : impl '<->' iff
+-- iff    : impl
+--
+-- impl   : or '->' impl
+-- impl   : or
+--
+-- or     : and '|' or
+-- or     : and
+--
+-- and    : neg '&' and
+-- and    : neg
+--
+-- neg    : '-' neg
+-- neg    : qnt
+--
+-- qnt    : '∀' '(' NAME ')' neg
+-- qnt    : '∀' '{' NAME '}' neg
+-- qnt    : '∀' '[' NAME ']' neg
+-- qnt    : '∃' '(' NAME ')' neg
+-- qnt    : '∃' '{' NAME '}' neg
+-- qnt    : '∃' '[' NAME ']' neg
+-- qnt    : atom
+--
+-- atom   : '1'
+-- atom   : '0'
+-- atom   : NAME
+-- atom   : NAME '(' funtree ')'
+-- atom   : NAME '{' funtree '}'
+-- atom   : NAME '[' funtree ']'
+-- atom   : '(' expr ')'
+-- atom   : '{' expr '}'
+-- atom   : '[' expr ']'
+--
+-- funtree : NAME
+-- funtree : NAME '(' funtree_args ')'
+--
+-- funtree_args : funtree
+-- funtree_args : funtree ',' funtree_args
+--
 
-                        _ ->
-                            Ok ( Atom name, tl )
+
+goal : Recognizer Expr Token
+goal =
+    chain (\v _ -> v) expr (end |> expect "FIN")
+
+
+expr : Recognizer Expr Token
+expr =
+    iff
+
+
+iff : Recognizer Expr Token
+iff =
+    chain (applyIfNecessary Iff)
+        impl
+        (maybe <| chain (\_ v -> v) (litToken TokIff) (lazy (\_ -> iff)))
+
+
+impl : Recognizer Expr Token
+impl =
+    chain (applyIfNecessary Implies)
+        or
+        (maybe <| chain (\_ v -> v) (litToken TokImplies) (lazy (\_ -> impl)))
+
+
+or : Recognizer Expr Token
+or =
+    chain (applyIfNecessary Or)
+        and
+        (maybe <| chain (\_ v -> v) (litToken TokOr) (lazy (\_ -> or)))
+
+
+and : Recognizer Expr Token
+and =
+    chain (applyIfNecessary And)
+        neg
+        (maybe <| chain (\_ v -> v) (litToken TokAnd) (lazy (\_ -> and)))
+
+
+applyIfNecessary : (a -> a -> a) -> a -> Maybe a -> a
+applyIfNecessary fn x mx =
+    case mx of
+        Just v ->
+            fn x v
+
+        Nothing ->
+            x
+
+
+neg : Recognizer Expr Token
+neg =
+    choice
+        qnt
+        (chain (\_ v -> v) (litToken TokNot) (lazy (\_ -> neg)) |> map Neg)
+
+
+qnt : Recognizer Expr Token
+qnt =
+    choice3
+        (chain3 (\_ -> Forall) (litToken TokForall) qntArg (lazy (\_ -> qnt)))
+        (chain3 (\_ -> Forall) (litToken TokExists) qntArg (lazy (\_ -> qnt)))
+        atom
+
+
+qntArg : Recognizer String Token
+qntArg =
+    choice3
+        (chain3 (\_ v _ -> v) (litToken TokLPar) tokName (litToken TokRPar))
+        (chain3 (\_ v _ -> v) (litToken TokLBrac) tokName (litToken TokRBrac))
+        (chain3 (\_ v _ -> v) (litToken TokLSqBrac) tokName (litToken TokRSqBrac))
+
+
+atom : Recognizer Expr Token
+atom =
+    --Looks like lisp LMAO
+    choice
+        (choice
+            (litToken (TokNum "1") |> map (\_ -> One))
+            (litToken (TokNum "0") |> map (\_ -> Zero))
+        )
+        (choice3
+            (tokName |> map Ident)
+            atomPredic
+            atomSubExpr
+        )
+        |> map replaceOneOrZero
+
+
+replaceOneOrZero : Expr -> Expr
+replaceOneOrZero ex =
+    if ex == Ident "1" then
+        One
+
+    else if ex == Ident "0" then
+        Zero
+
+    else
+        ex
+
+
+atomPredic : Recognizer Expr Token
+atomPredic =
+    chain Predicate tokName funTreeArgsPar
+
+
+atomSubExpr : Recognizer Expr Token
+atomSubExpr =
+    choice3
+        (chain3 (\_ v _ -> v) (litToken TokLPar) (lazy (\_ -> expr)) (litToken TokRPar))
+        (chain3 (\_ v _ -> v) (litToken TokLBrac) (lazy (\_ -> expr)) (litToken TokRBrac))
+        (chain3 (\_ v _ -> v) (litToken TokLSqBrac) (lazy (\_ -> expr)) (litToken TokRSqBrac))
+
+
+funTree : Recognizer FunTree Token
+funTree =
+    choice
+        (chain Apply
+            tokName
+            funTreeArgsPar
+        )
+        (tokName |> map Atom)
+
+
+funTreeArgsPar : Recognizer (List FunTree) Token
+funTreeArgsPar =
+    choice3
+        (chain3 (\_ v _ -> v) (litToken TokLPar) funTreeArgs (litToken TokRPar))
+        (chain3 (\_ v _ -> v) (litToken TokLBrac) funTreeArgs (litToken TokRBrac))
+        (chain3 (\_ v _ -> v) (litToken TokLSqBrac) funTreeArgs (litToken TokRSqBrac))
+
+
+funTreeArgs : Recognizer (List FunTree) Token
+funTreeArgs =
+    chain (::)
+        (lazy (\_ -> funTree))
+        (chain (\_ v -> v) (litToken TokComma) (lazy (\_ -> funTreeArgs)) |> maybeDefault [])
+
+
+
+-- Utilities
+
+
+tokName : Recognizer String Token
+tokName =
+    accept
+        (\t ->
+            case t.kind of
+                TokIdent v ->
+                    Just v
+
+                TokNum v ->
+                    Just v
 
                 _ ->
-                    Err { location = pos, msg = "Expected NAME, but found " ++ tokenKindToString kind }
+                    Nothing
+        )
+        |> expect "NOMBRE"
 
-        [] ->
-            Err { location = 0, msg = "Expected NAME, but found EOF" }
 
-
-parseFunTreeArgsPar : List Token -> Result ParseError ( List FunTree, List Token )
-parseFunTreeArgsPar lst =
-    case lst of
-        hd :: tl ->
-            if hd.kind == TokLPar then
-                parseFunTreeArgs tl
-                    |> Result.andThen (parseFunParExpected TokRPar)
-
-            else if hd.kind == TokLBrac then
-                parseFunTreeArgs tl
-                    |> Result.andThen (parseFunParExpected TokRBrac)
-
-            else if hd.kind == TokLSqBrac then
-                parseFunTreeArgs tl
-                    |> Result.andThen (parseFunParExpected TokRSqBrac)
+litToken : TokenKind -> Recognizer () Token
+litToken tk =
+    accept
+        (\t ->
+            if t.kind == tk then
+                Just ()
 
             else
-                Err { location = hd.pos, msg = "Expected (, [, {" }
-
-        _ ->
-            Err { location = 0, msg = "Expected (, [, {" }
-
-
-parseFunParExpected : TokenKind -> ( List FunTree, List Token ) -> Result ParseError ( List FunTree, List Token )
-parseFunParExpected knd ( res, slc ) =
-    case slc of
-        hd2 :: rem ->
-            if hd2.kind == knd then
-                Ok ( res, rem )
-
-            else
-                Err { location = hd2.pos, msg = "Expected " ++ tokenKindToString knd ++ ", found " ++ tokenKindToString hd2.kind }
-
-        [] ->
-            Err { location = 0, msg = "Expected " ++ tokenKindToString knd ++ ", found EOF" }
-
-
-parseFunTreeArgs : List Token -> Result ParseError ( List FunTree, List Token )
-parseFunTreeArgs lst =
-    case parseFunTree lst of
-        Ok ( ex, toks ) ->
-            case toks of
-                hd :: tl ->
-                    if hd.kind == TokComma then
-                        parseFunTreeArgs tl |> Result.map (Tuple.mapFirst ((::) ex))
-
-                    else
-                        Ok ( [ ex ], toks )
-
-                _ ->
-                    Ok ( [ ex ], toks )
-
-        Err e ->
-            Err e
-
-
-parseBinOp : (Token -> Bool) -> (Expr -> Expr -> Expr) -> (List Token -> Result ParseError ( Expr, List Token )) -> List Token -> Result ParseError ( Expr, List Token )
-parseBinOp op bld fn lst =
-    case fn lst of
-        Ok ( left, rem ) ->
-            case rem of
-                head :: body ->
-                    if op head then
-                        parseBinOp op bld fn body
-                            |> Result.map
-                                (\( right, remrem ) -> ( bld left right, remrem ))
-
-                    else
-                        Ok ( left, rem )
-
-                _ ->
-                    Ok ( left, rem )
-
-        Err err ->
-            Err err
+                Nothing
+        )
+        |> expect (tokenKindToString tk)
 
 
 

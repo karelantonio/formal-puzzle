@@ -3,6 +3,7 @@ module Expr.Types exposing
     , Expr(..)
     , FunTree(..)
     , InferenceRefs
+    , Loc(..)
     , ParseError
     , arity
     , emptyDomain
@@ -45,10 +46,15 @@ type InferenceRefs
     | TwoRefs Int Int
 
 
+type Loc
+    = Pos Int
+    | End
+
+
 {-| The location and cause of the error
 -}
 type alias ParseError =
-    { location : Int, msg : String }
+    { location : Loc, msg : String }
 
 
 type alias Domain =
