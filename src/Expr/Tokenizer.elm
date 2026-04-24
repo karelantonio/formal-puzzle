@@ -27,6 +27,7 @@ type TokenKind
     | TokExists
     | TokComma
     | TokEq
+    | TokPlus
     | TokUnknown String
 
 
@@ -84,6 +85,9 @@ tokenKindToString k =
         TokEq ->
             "="
 
+        TokPlus ->
+            "+"
+
         TokUnknown c ->
             "Unkown (" ++ c ++ ")"
 
@@ -136,6 +140,9 @@ tokenize idx s =
 
             else if head == '=' then
                 { pos = idx, kind = TokEq } :: tokenize (idx + 1) body
+
+            else if head == '+' then
+                { pos = idx, kind = TokPlus } :: tokenize (idx + 1) body
 
             else if head == ' ' || head == '\t' || head == '\n' || head == '\u{000D}' then
                 tokenize (idx + 1) body

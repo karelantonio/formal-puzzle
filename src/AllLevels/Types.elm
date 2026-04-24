@@ -1,5 +1,6 @@
 module AllLevels.Types exposing (..)
 
+import Expr.Parser exposing (parseNoCheckPred)
 import Expr.Types exposing (Expr(..), FunTree(..))
 import Html exposing (Html, div, h4, p, text)
 import Html.Attributes exposing (class)
@@ -57,44 +58,44 @@ levels =
       , descr =
             [ Text "Todos saben que la suma de un número par con otro número par es par, pero entre saberlo y demostrarlo hay una gran diferencia."
             , Text "Decimos que un número 'x' es par, sí y solo sí existe otro 'y' tal que y+y=x, en otras palabras:"
-            , Theory <| Forall "x" (Iff (Predicate "par" [ Atom "x" ]) (Exists "y" (Predicate "=" [ Atom "x", Apply "s" [ Atom "y", Atom "y" ] ])))
+            , Theory <|
+                (parseNoCheckPred "∀(x)(par(x)<->∃(y)y+y=x)"
+                    |> Result.withDefault (Ident "[redacted]")
+                )
             , Text "Donde s(a,b) es la suma de a y b. Y es una función que cumple los siguientes axiomas:"
             , Theory <|
-                Forall "a" <|
-                    Forall "b" <|
-                        Forall "c" <|
-                            Forall "d" <|
-                                Implies (And (Predicate "=" [ Atom "a", Atom "c" ]) (Predicate "=" [ Atom "b", Atom "d" ]))
-                                    (Predicate "=" [ Apply "s" [ Atom "a", Atom "b" ], Apply "s" [ Atom "c", Atom "d" ] ])
+                (parseNoCheckPred "∀(a)∀(b)∀(c)∀(d) (a=c&b=d->a+b=c+d)"
+                    |> Result.withDefault (Ident "[redacted]")
+                )
             , Theory <|
-                Forall "x" <|
-                    Predicate "=" [ Apply "s" [ Atom "0", Atom "x" ], Atom "x" ]
+                (parseNoCheckPred "∀(x) x+0=x"
+                    |> Result.withDefault (Ident "[redacted]")
+                )
             , Theory <|
-                Forall "x" <|
-                    Forall "y" <|
-                        Exists "z" <|
-                            Predicate "=" [ Apply "s" [ Atom "x", Atom "y" ], Atom "z" ]
+                (parseNoCheckPred "∀(x)∀(y)∃(z) x+y=z"
+                    |> Result.withDefault (Ident "[redacted]")
+                )
             , Theory <|
-                Forall "a" <|
-                    Forall "b" <|
-                        Predicate "=" [ Apply "s" [ Atom "a", Atom "b" ], Apply "s" [ Atom "b", Atom "a" ] ]
+                (parseNoCheckPred "∀(a)∀(b) a+b=b+a"
+                    |> Result.withDefault (Ident "[redacted]")
+                )
             , Text "Además, junto con la función sucesor cumplen:"
             , Theory <|
-                Forall "x" <|
-                    Forall "y" <|
-                        Predicate "=" [ Apply "s" [ Atom "x", Apply "suc" [ Atom "y" ] ], Apply "suc" [ Apply "s" [ Atom "x", Atom "y" ] ] ]
+                (parseNoCheckPred "∀(x)∀(y) x+suc(y)=suc(x+y)"
+                    |> Result.withDefault (Ident "[redacted]")
+                )
             , Theory <|
-                Forall "x" <|
-                    Exists "y" <|
-                        Predicate "=" [ Apply "suc" [ Atom "x" ], Atom "y" ]
+                (parseNoCheckPred "∀(x)∃(y) suc(x)=y"
+                    |> Result.withDefault (Ident "[redacted]")
+                )
             , Theory <|
-                Neg <|
-                    Exists "x" <|
-                        Predicate "=" [ Apply "suc" [ Atom "x" ], Atom "0" ]
+                (parseNoCheckPred "-∃(x)suc(x) = 0"
+                    |> Result.withDefault (Ident "[redacted]")
+                )
             , Theory <|
-                Forall "x" <|
-                    Forall "y" <|
-                        Implies (Predicate "=" [ Atom "x", Atom "y" ]) (Predicate "=" [ Apply "suc" [ Atom "x" ], Apply "suc" [ Atom "y" ] ])
+                (parseNoCheckPred "∀(x)∀(y)(x=y -> suc(x) = suc(y))"
+                    |> Result.withDefault (Ident "[redacted]")
+                )
             ]
       , goal =
             Forall "x" <|

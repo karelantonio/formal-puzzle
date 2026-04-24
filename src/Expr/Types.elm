@@ -219,8 +219,25 @@ toStringFunTree ftr =
         Atom name ->
             name
 
+        Apply "+" [ l, r ] ->
+            toStringFunTreePar l ++ "+" ++ toStringFunTreePar r
+
         Apply name args ->
             name ++ "(" ++ String.join "," (List.map toStringFunTree args) ++ ")"
+
+
+
+-- To avoid ambiguity
+
+
+toStringFunTreePar : FunTree -> String
+toStringFunTreePar ftr =
+    case ftr of
+        Apply "+" [ _ ] ->
+            "(" ++ toStringFunTree ftr ++ ")"
+
+        _ ->
+            toStringFunTree ftr
 
 
 {-| Add parenthesis around if is not simple

@@ -133,8 +133,12 @@ match ex pat clues =
                 case ( Dict.get name clues.predArgNames, Dict.get name clues.predicates ) of
                     ( Just names, Just original ) ->
                         let
+                            mappedNames =
+                                List.map (\n -> Dict.get n clues.variables |> Maybe.withDefault "ERRRORRRRAAA SHOULD PANIC AA") names
+                        in
+                        let
                             whatToReplace =
-                                List.map2 Tuple.pair names args
+                                List.map2 Tuple.pair mappedNames args
                                     |> Dict.fromList
                         in
                         (replaceInOriginalE whatToReplace original
@@ -452,7 +456,7 @@ makePredRepl : String -> Clues -> List FunTree -> Dict String FunTree
 makePredRepl name clues args =
     case Dict.get name clues.predArgNames of
         Just v ->
-            List.map2 Tuple.pair v args |> Dict.fromList
+            List.map2 Tuple.pair (List.map (\nm -> Dict.get nm clues.variables |> Maybe.withDefault "AAAAAAAAAPANICCC") v) args |> Dict.fromList
 
         Nothing ->
             Dict.empty

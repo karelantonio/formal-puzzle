@@ -82,11 +82,24 @@ funTreeToMathMLTag tr =
         Atom name ->
             [ node "mi" [] [ text name ] ]
 
+        Apply "+" [ l, r ] ->
+            funTreeToMathMLTagPar l ++ (node "mo" [] [ text "+" ] :: funTreeToMathMLTagPar r)
+
         Apply name args ->
             node "mi" [] [ text name ]
                 :: node "mo" [] [ text "(" ]
                 :: ((joinWith [ node "mo" [] [ text "," ] ] <| List.map funTreeToMathMLTag args) |> List.concat)
                 ++ [ node "mo" [] [ text ")" ] ]
+
+
+funTreeToMathMLTagPar : FunTree -> List (Html msg)
+funTreeToMathMLTagPar ftr =
+    case ftr of
+        Apply "+" [ _, _ ] ->
+            node "mo" [] [ text "(" ] :: funTreeToMathMLTag ftr ++ [ node "mo" [] [ text ")" ] ]
+
+        _ ->
+            funTreeToMathMLTag ftr
 
 
 joinWith : a -> List a -> List a

@@ -1,4 +1,4 @@
-module Expr.Parser exposing (parse)
+module Expr.Parser exposing (parse, parseNoCheckPred)
 
 import Combinators exposing (Addr(..), Recognizer, accept, chain, chain3, choice, choice3, end, expect, lazy, map, maybe, maybeDefault)
 import Dict
@@ -88,6 +88,8 @@ addr2loc a =
 --
 -- funtree : NAME
 -- funtree : NAME '(' funtree_args ')'
+-- funtree : funtree '+' funtree
+-- funtree : '(' funtree ')'
 --
 -- funtree_args : funtree
 -- funtree_args : funtree ',' funtree_args
@@ -159,10 +161,7 @@ qnt =
 
 qntArg : Recognizer String Token
 qntArg =
-    choice3
-        (chain3 (\_ v _ -> v) (litToken TokLPar) tokName (litToken TokRPar))
-        (chain3 (\_ v _ -> v) (litToken TokLBrac) tokName (litToken TokRBrac))
-        (chain3 (\_ v _ -> v) (litToken TokLSqBrac) tokName (litToken TokRSqBrac))
+    parRecogn tokName
 
 
 atom : Recognizer Expr Token
@@ -207,28 +206,31 @@ atomPredicEq =
 
 atomSubExpr : Recognizer Expr Token
 atomSubExpr =
-    choice3
-        (chain3 (\_ v _ -> v) (litToken TokLPar) (lazy (\_ -> expr)) (litToken TokRPar))
-        (chain3 (\_ v _ -> v) (litToken TokLBrac) (lazy (\_ -> expr)) (litToken TokRBrac))
-        (chain3 (\_ v _ -> v) (litToken TokLSqBrac) (lazy (\_ -> expr)) (litToken TokRSqBrac))
+    parRecogn (lazy (\_ -> expr))
 
 
 funTree : Recognizer FunTree Token
 funTree =
-    choice
+    chain
+        (\l r -> Maybe.map (\v -> [ l, v ]) r |> Maybe.map (Apply "+") |> Maybe.withDefault l)
+        funTreeNoSum
+        (chain (\_ r -> r) (litToken TokPlus) (lazy (\_ -> funTree)) |> maybe)
+
+
+funTreeNoSum : Recognizer FunTree Token
+funTreeNoSum =
+    choice3
         (chain Apply
             tokName
             funTreeArgsPar
         )
         (tokName |> map Atom)
+        (parRecogn (lazy (\_ -> funTree)))
 
 
 funTreeArgsPar : Recognizer (List FunTree) Token
 funTreeArgsPar =
-    choice3
-        (chain3 (\_ v _ -> v) (litToken TokLPar) funTreeArgs (litToken TokRPar))
-        (chain3 (\_ v _ -> v) (litToken TokLBrac) funTreeArgs (litToken TokRBrac))
-        (chain3 (\_ v _ -> v) (litToken TokLSqBrac) funTreeArgs (litToken TokRSqBrac))
+    parRecogn funTreeArgs
 
 
 funTreeArgs : Recognizer (List FunTree) Token
@@ -236,6 +238,18 @@ funTreeArgs =
     chain (::)
         (lazy (\_ -> funTree))
         (chain (\_ v -> v) (litToken TokComma) (lazy (\_ -> funTreeArgs)) |> maybeDefault [])
+
+
+
+-- Some recognizer surrounded by parenthesis (of any kind)
+
+
+parRecogn : Recognizer a Token -> Recognizer a Token
+parRecogn rec =
+    choice3
+        (chain3 (\_ v _ -> v) (litToken TokLPar) rec (litToken TokRPar))
+        (chain3 (\_ v _ -> v) (litToken TokLBrac) rec (litToken TokRBrac))
+        (chain3 (\_ v _ -> v) (litToken TokLSqBrac) rec (litToken TokRSqBrac))
 
 
 
