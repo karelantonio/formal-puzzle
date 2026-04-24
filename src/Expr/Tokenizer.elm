@@ -26,6 +26,7 @@ type TokenKind
     | TokForall
     | TokExists
     | TokComma
+    | TokEq
     | TokUnknown String
 
 
@@ -80,6 +81,9 @@ tokenKindToString k =
         TokComma ->
             ","
 
+        TokEq ->
+            "="
+
         TokUnknown c ->
             "Unkown (" ++ c ++ ")"
 
@@ -129,6 +133,9 @@ tokenize idx s =
 
             else if head == ',' then
                 { pos = idx, kind = TokComma } :: tokenize (idx + 1) body
+
+            else if head == '=' then
+                { pos = idx, kind = TokEq } :: tokenize (idx + 1) body
 
             else if head == ' ' || head == '\t' || head == '\n' || head == '\u{000D}' then
                 tokenize (idx + 1) body

@@ -199,7 +199,12 @@ toString expr =
             parToString left ++ "<->" ++ parToString right
 
         Predicate name args ->
-            name ++ "(" ++ String.join "," (List.map toStringFunTree args) ++ ")"
+            case ( name, args ) of
+                ( "=", [ l, r ] ) ->
+                    toStringFunTree l ++ "=" ++ toStringFunTree r
+
+                _ ->
+                    name ++ "(" ++ String.join "," (List.map toStringFunTree args) ++ ")"
 
         Forall name sub ->
             "∀(" ++ name ++ ")" ++ parToString sub

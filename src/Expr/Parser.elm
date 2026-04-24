@@ -1,4 +1,4 @@
-module Expr.Parser exposing (atom, atomPredic, parse, parseNoCheckPred)
+module Expr.Parser exposing (parse)
 
 import Combinators exposing (Addr(..), Recognizer, accept, chain, chain3, choice, choice3, end, expect, lazy, map, maybe, maybeDefault)
 import Dict
@@ -81,6 +81,7 @@ addr2loc a =
 -- atom   : NAME '(' funtree ')'
 -- atom   : NAME '{' funtree '}'
 -- atom   : NAME '[' funtree ']'
+-- atom   : funtree = funtree
 -- atom   : '(' expr ')'
 -- atom   : '{' expr '}'
 -- atom   : '[' expr ']'
@@ -152,7 +153,7 @@ qnt : Recognizer Expr Token
 qnt =
     choice3
         (chain3 (\_ -> Forall) (litToken TokForall) qntArg (lazy (\_ -> qnt)))
-        (chain3 (\_ -> Forall) (litToken TokExists) qntArg (lazy (\_ -> qnt)))
+        (chain3 (\_ -> Exists) (litToken TokExists) qntArg (lazy (\_ -> qnt)))
         atom
 
 
@@ -194,7 +195,14 @@ replaceOneOrZero ex =
 
 atomPredic : Recognizer Expr Token
 atomPredic =
-    chain Predicate tokName funTreeArgsPar
+    choice
+        (chain Predicate tokName funTreeArgsPar)
+        atomPredicEq
+
+
+atomPredicEq : Recognizer Expr Token
+atomPredicEq =
+    chain3 (\l _ r -> Predicate "=" [ l, r ]) funTree (litToken TokEq) funTree
 
 
 atomSubExpr : Recognizer Expr Token

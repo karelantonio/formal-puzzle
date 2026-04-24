@@ -40,10 +40,17 @@ exprToMathMLTag ex =
             exprToMathMLTagPar a ++ (node "mo" [] [ text "⟺" ] :: exprToMathMLTagPar b)
 
         Predicate name args ->
-            node "mi" [] [ text name ]
-                :: node "mo" [] [ text "(" ]
-                :: joinWith (node "mo" [] [ text "," ]) (List.map funTreeToMathMLTag args |> List.concat)
-                ++ [ node "mo" [] [ text ")" ] ]
+            -- Should probably do something better here in a future
+            -- WTF am I doing with my life???
+            case ( name, args ) of
+                ( "=", [ l, r ] ) ->
+                    funTreeToMathMLTag l ++ node "mo" [] [ text "=" ] :: funTreeToMathMLTag r
+
+                _ ->
+                    node "mi" [] [ text name ]
+                        :: node "mo" [] [ text "(" ]
+                        :: joinWith (node "mo" [] [ text "," ]) (List.map funTreeToMathMLTag args |> List.concat)
+                        ++ [ node "mo" [] [ text ")" ] ]
 
         Forall name sub ->
             node "mo" [] [ text "∀" ]

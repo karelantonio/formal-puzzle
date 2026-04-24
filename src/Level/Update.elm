@@ -70,7 +70,7 @@ locationToString loc =
 
 updateHandleParsed : ExT -> Expr -> ( Model, Cmd Msg )
 updateHandleParsed ex parsed_ex =
-    case tryToInferDed { theory = ex.theory, steps = ex.steps } parsed_ex of
+    case tryToInferDed { theory = Debug.log "theory" ex.theory, steps = ex.steps } parsed_ex of
         Just ded ->
             ( Ex
                 { ex
