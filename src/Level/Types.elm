@@ -18,8 +18,13 @@ type Step
     | Deduction { assumed : Maybe Expr, num : Int, what : Expr, reason : Reason }
 
 
+type DescrItem
+    = Text String
+    | Theory Expr
+
+
 type alias ExT =
-    { descr : String
+    { descr : List DescrItem
     , goal : Expr
     , ded_text : String
     , error_msg : Maybe String
@@ -31,16 +36,29 @@ type alias ExT =
 
 {-| Usen in AllLevels to create the levels
 -}
-makeLevel : { descr : String, goal : Expr, theory : List Expr } -> Model
+makeLevel : { descr : List DescrItem, goal : Expr } -> Model
 makeLevel info =
+    let
+        theory =
+            List.filterMap
+                (\e ->
+                    case e of
+                        Theory i ->
+                            Just i
+
+                        _ ->
+                            Nothing
+                )
+                info.descr
+    in
     Ex
         { descr = info.descr
         , goal = info.goal
-        , theory = info.theory
+        , theory = theory
         , ded_text = ""
         , error_msg = Nothing
         , steps = [ Assume Nothing ]
-        , domain = extractDomainFromTheory (info.goal :: info.theory)
+        , domain = extractDomainFromTheory (info.goal :: theory)
         }
 
 

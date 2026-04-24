@@ -22,7 +22,7 @@ view m =
             , body =
                 [ div [ class "exercise-ui" ]
                     [ div [ class "exercise-content", id "exercise-content" ]
-                        [ theory ex.descr ex.theory ex.goal
+                        [ theory ex.descr ex.goal
                         , theSteps ex.steps
                         , parseError ex.error_msg
                         ]
@@ -209,18 +209,23 @@ deductionSymbol =
     node "math" [] [ node "mrow" [] [ node "mo" [] [ text "⊢" ] ] ]
 
 
-theory : String -> List Expr -> Expr -> Html Msg
-theory descr lst goal =
+theory : List DescrItem -> Expr -> Html Msg
+theory descr goal =
     div [ class "theory" ]
         (h3 [] [ text "Teoría:" ]
-            :: p [ id "theory-description" ] [ text descr ]
-            :: List.map theoryItem lst
+            -- :: p [ id "theory-description" ] [ text descr ]
+            :: List.map theoryItem descr
             ++ [ h3 [] [ text "Objetivo:" ]
-               , theoryItem goal
+               , theoryItem (Theory goal)
                ]
         )
 
 
-theoryItem : Expr -> Html Msg
-theoryItem ex =
-    div [ class "theory-item clickable", onClick (ExprPressed ex) ] [ MathML.exprToMathML ex ]
+theoryItem : DescrItem -> Html Msg
+theoryItem itm =
+    case itm of
+        Text txt ->
+            div [ class "theory-description" ] [ text txt ]
+
+        Theory ex ->
+            div [ class "theory-item clickable", onClick (ExprPressed ex) ] [ MathML.exprToMathML ex ]
