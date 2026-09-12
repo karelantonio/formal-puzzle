@@ -153,10 +153,14 @@ encodeStep step =
 
         Deduction { assumed, num, what, reason } ->
             JE.object
-                [ ( "assumed", Maybe.map encodeExpr assumed |> Maybe.withDefault JE.null )
-                , ( "num", JE.int num )
-                , ( "what", encodeExpr what )
-                , ( "reason", encodeReason reason )
+                [ ( "deduction"
+                  , JE.object
+                        [ ( "assumed", Maybe.map encodeExpr assumed |> Maybe.withDefault JE.null )
+                        , ( "num", JE.int num )
+                        , ( "what", encodeExpr what )
+                        , ( "reason", encodeReason reason )
+                        ]
+                  )
                 ]
 
 

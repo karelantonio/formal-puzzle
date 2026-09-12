@@ -12,9 +12,11 @@
 <noscript>Es necesario JavaScript para correr esta app</noscript>
 <script src="app.js"></script>
 <script>
+var settings = null;
+if(localStorage) settings=localStorage.settings;
 var app = Elm.Main.init({
   node: document.getElementById('app'),
-  flags: Date.now()
+  flags: settings
 });
 app.ports.scrollToBottom.subscribe(function(id){
   requestAnimationFrame(function(_){
@@ -38,6 +40,9 @@ app.ports.insertInInput.subscribe(function(args){
     var res = txt.substring(0,elem.selectionStart) + args[1] + txt.substring(elem.selectionEnd,txt.length);
     app.ports.doneInsertInInput.send(res);
   });
+});
+app.ports.saveSettings.subscribe(function(args){
+  localStorage.settings = args;
 });
 </script>
 </body>

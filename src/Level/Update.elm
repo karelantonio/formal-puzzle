@@ -7,7 +7,9 @@ import Infer.InferenceRule
 import Infer.Monotony
 import Infer.Transformation
 import Infer.Types exposing (InferenceRefs(..))
+import Json.Encode as JE
 import Level.Types exposing (..)
+import Level.Utils exposing (encodeSavedLevelState)
 import Set exposing (Set)
 import Utils
 
@@ -72,12 +74,19 @@ updateHandleParsed : ExT -> Expr -> ( Model, Cmd Msg )
 updateHandleParsed ex parsed_ex =
     case tryToInferDed { theory = ex.theory, steps = ex.steps } parsed_ex of
         Just ded ->
-            ( Ex
-                { ex
-                    | ded_text = ""
-                    , steps = ded :: ex.steps
-                }
-            , Utils.scrollToBottom "exercise-content"
+            let
+                newMod =
+                    Ex
+                        { ex
+                            | ded_text = ""
+                            , steps = ded :: ex.steps
+                        }
+            in
+            ( newMod
+            , Cmd.batch
+                [ Utils.scrollToBottom "exercise-content"
+                , encodeSavedLevelState newMod |> JE.encode 0 |> Just |> Utils.saveSettings
+                ]
             )
 
         Nothing ->

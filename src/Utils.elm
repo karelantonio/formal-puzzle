@@ -76,3 +76,10 @@ port insertInInput : ( String, String ) -> Cmd msg
 
 
 port doneInsertInInput : (String -> msg) -> Sub msg
+
+
+
+-- Save this object in the local storage
+
+
+port saveSettings : Maybe String -> Cmd msg
