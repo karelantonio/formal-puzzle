@@ -129,48 +129,57 @@ parseError err =
 theSteps : List Step -> Html Msg
 theSteps steps =
     div [ class "exercise-ui-steps" ]
-        [ table [] [ tbody [] (List.map step2html steps |> List.reverse) ] ]
+        [ table [] [ tbody [] (steps2html steps |> List.reverse) ] ]
 
 
-step2html : Step -> Html Msg
-step2html step =
-    case step of
-        Assume a ->
-            step2htmlAssume a
+steps2html : List Step -> List (Html Msg)
+steps2html steps =
+    case steps of
+        [] ->
+            []
 
-        Deduction ded ->
-            step2htmlDeduction ded
+        -- Just next to the assuming step
+        (Deduction ded) :: (Assume a) :: tl ->
+            step2htmlDeduction (Just a) ded :: steps2html tl
+
+        (Assume a) :: tl ->
+            step2htmlAssume a :: steps2html tl
+
+        (Deduction ded) :: tl ->
+            step2htmlDeduction Nothing ded :: steps2html tl
 
 
 step2htmlAssume : Maybe Expr -> Html Msg
 step2htmlAssume maex =
+    tr [ class "exercise-step-deduction" ]
+        [ td [] [ step2htmlAssumeCore maex ]
+        , td [] [ deductionSymbol ]
+        , td [ colspan 3, class "exercise-step-deduction-expression exercise-step-deduction-nothing" ] [ text "(Nada todavía, haz tus deducciones)" ]
+        ]
+
+
+step2htmlAssumeCore : Maybe Expr -> Html Msg
+step2htmlAssumeCore maex =
     case maex of
         Just what ->
-            tr [ class "exercise-step-deduction" ]
-                [ td []
-                    [ div [ class "clickable", onClick (ExprPressed what) ]
-                        [ text "T,"
-                        , exprToMathML what
-                        ]
-                    ]
-                , td [] [ deductionSymbol ]
-                , td [ colspan 3, class "exercise-step-deduction-expression exercise-step-deduction-nothing" ] [ text "(Nada todavía, haz tus deducciones)" ]
+            div [ class "clickable", onClick (ExprPressed what) ]
+                [ text "T,"
+                , exprToMathML what
                 ]
 
         Nothing ->
-            tr [ class "exercise-step-deduction" ]
-                [ td []
-                    [ text "T"
-                    ]
-                , td [] [ deductionSymbol ]
-                , td [ colspan 3, class "exercise-step-deduction-expression exercise-step-deduction-nothing" ] [ text "(Nada todavía, haz tus deducciones)" ]
-                ]
+            text "T"
 
 
-step2htmlDeduction : { assumed : Maybe Expr, num : Int, what : Expr, reason : Reason } -> Html Msg
-step2htmlDeduction ded =
+step2htmlDeduction : Maybe (Maybe Expr) -> { assumed : Maybe Expr, num : Int, what : Expr, reason : Reason } -> Html Msg
+step2htmlDeduction firstAssuming ded =
     tr [ class "exercise-step-deduction" ]
-        [ td [] []
+        [ case firstAssuming of
+            Just v ->
+                td [] [ step2htmlAssumeCore v ]
+
+            Nothing ->
+                td [] []
         , td [ class "exercise-step-deduction-symbol" ]
             [ deductionSymbol ]
         , td [ onClick (ExprPressed ded.what), class "exercise-step-deduction-expression clickable" ]
