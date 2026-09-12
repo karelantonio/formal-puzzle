@@ -374,7 +374,7 @@ decodeExpr =
                 , -- Identifier
                   JD.string |> JD.map Ident
                 , -- Negation
-                  JD.field "neg" decodeExpr
+                  JD.field "neg" decodeExpr |> JD.map Neg
                 , -- And
                   JD.map2 And (JD.field "and_l" decodeExpr) (JD.field "and_r" decodeExpr)
                 , -- Or
