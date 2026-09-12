@@ -6,7 +6,11 @@ module Expr.Types exposing
     , Loc(..)
     , ParseError
     , arity
+    , decodeExpr
+    , decodeFunTree
     , emptyDomain
+    , encodeExpr
+    , encodeFunTree
     , extractDomainFromTheory
     , isSimple
     , isVariable
@@ -19,6 +23,8 @@ module Expr.Types exposing
 -}
 
 import Dict exposing (Dict)
+import Json.Decode as JD
+import Json.Encode as JE
 import Set exposing (Set)
 
 
@@ -268,3 +274,131 @@ arity tr =
 isVariable : String -> Bool
 isVariable name =
     String.toList name |> List.head |> Maybe.map Char.isLower |> Maybe.withDefault False
+
+
+
+-- Encoders and decoders
+
+
+encodeExpr : Expr -> JE.Value
+encodeExpr ex =
+    case ex of
+        One ->
+            JE.int 1
+
+        Zero ->
+            JE.int 0
+
+        Ident s ->
+            JE.string s
+
+        Neg sub ->
+            JE.object
+                [ ( "neg", encodeExpr sub )
+                ]
+
+        And l r ->
+            JE.object
+                [ ( "and_l", encodeExpr l )
+                , ( "and_r", encodeExpr r )
+                ]
+
+        Or l r ->
+            JE.object
+                [ ( "or_l", encodeExpr l )
+                , ( "or_r", encodeExpr r )
+                ]
+
+        Implies l r ->
+            JE.object
+                [ ( "implies_l", encodeExpr l )
+                , ( "implies_r", encodeExpr r )
+                ]
+
+        Iff l r ->
+            JE.object
+                [ ( "iff_l", encodeExpr l )
+                , ( "iff_r", encodeExpr r )
+                ]
+
+        Predicate name args ->
+            JE.object
+                [ ( "p", JE.string name )
+                , ( "args", JE.list encodeFunTree args )
+                ]
+
+        Forall var sub ->
+            JE.object
+                [ ( "A", JE.string var )
+                , ( "sub", encodeExpr sub )
+                ]
+
+        Exists var sub ->
+            JE.object
+                [ ( "E", JE.string var )
+                , ( "sub", encodeExpr sub )
+                ]
+
+
+encodeFunTree : FunTree -> JE.Value
+encodeFunTree ft =
+    case ft of
+        Atom x ->
+            JE.string x
+
+        Apply name args ->
+            JE.object
+                [ ( "f", JE.string name )
+                , ( "args", JE.list encodeFunTree args )
+                ]
+
+
+decodeExpr : JD.Decoder Expr
+decodeExpr =
+    JD.lazy
+        (\_ ->
+            JD.oneOf
+                [ -- One and Zero
+                  JD.andThen
+                    (\num ->
+                        if num == 0 then
+                            JD.succeed Zero
+
+                        else if num == 1 then
+                            JD.succeed One
+
+                        else
+                            JD.fail "Unkown"
+                    )
+                    JD.int
+                , -- Identifier
+                  JD.string |> JD.map Ident
+                , -- Negation
+                  JD.field "neg" decodeExpr
+                , -- And
+                  JD.map2 And (JD.field "and_l" decodeExpr) (JD.field "and_r" decodeExpr)
+                , -- Or
+                  JD.map2 Or (JD.field "or_l" decodeExpr) (JD.field "or_r" decodeExpr)
+                , -- Implies
+                  JD.map2 Implies (JD.field "implies_l" decodeExpr) (JD.field "implies_r" decodeExpr)
+                , -- Iff
+                  JD.map2 Iff (JD.field "iff_l" decodeExpr) (JD.field "iff_r" decodeExpr)
+                , -- Predicate
+                  JD.map2 Predicate (JD.field "p" JD.string) (JD.field "args" (JD.list decodeFunTree))
+                , -- Forall
+                  JD.map2 Forall (JD.field "A" JD.string) (JD.field "sub" decodeExpr)
+                , -- Exists
+                  JD.map2 Exists (JD.field "E" JD.string) (JD.field "sub" decodeExpr)
+                ]
+        )
+
+
+decodeFunTree : JD.Decoder FunTree
+decodeFunTree =
+    JD.oneOf
+        [ JD.string |> JD.map Atom
+        , JD.lazy
+            (\_ ->
+                JD.map2 Apply (JD.field "f" JD.string) (JD.field "args" (JD.list decodeFunTree))
+            )
+        ]

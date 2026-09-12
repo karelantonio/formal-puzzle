@@ -1,11 +1,13 @@
 module Main exposing (..)
 
-import AllLevels.Types
+import AllLevels.Types exposing (lookupLevelByName)
 import AllLevels.Update
 import AllLevels.View
 import Browser exposing (Document, document)
 import Html
-import Level.Types
+import Json.Decode as JD
+import Json.Encode as JE
+import Level.Types exposing (decodeStep, encodeStep, makeLevel, makeLevelExT)
 import Level.Update
 import Level.View
 
@@ -32,8 +34,8 @@ type Model
 -- The init function (initial model)
 
 
-init : flags -> ( Model, Cmd Msg )
-init _ =
+init : JD.Value -> ( Model, Cmd Msg )
+init value =
     ( AllLevelsModelV AllLevels.Types.Model, Cmd.none )
 
 
@@ -98,7 +100,7 @@ subscriptions m =
 
 {-| Main entry point of the program
 -}
-main : Program () Model Msg
+main : Program JD.Value Model Msg
 main =
     document
         { init = init
@@ -106,3 +108,37 @@ main =
         , update = update
         , subscriptions = subscriptions
         }
+
+
+{-| Encoders and decoders for saving the apps state and reloading at startup
+-}
+encodeSavedLevelState : Level.Types.Model -> JE.Value
+encodeSavedLevelState model =
+    case model of
+        Level.Types.Ex ex ->
+            JE.object
+                [ ( "name", JE.string ex.lvl )
+                , ( "steps", JE.list encodeStep ex.steps )
+                ]
+
+
+decodeSavedLevelState : JD.Decoder Level.Types.Model
+decodeSavedLevelState =
+    let
+        dec =
+            JD.map2 Tuple.pair (JD.field "name" JD.string) (JD.field "steps" <| JD.list decodeStep)
+    in
+    JD.andThen
+        (\( name, steps ) ->
+            case lookupLevelByName name of
+                Just v ->
+                    let
+                        ext =
+                            makeLevelExT { lvl = v.name, descr = v.descr, goal = v.goal }
+                    in
+                    JD.succeed (Level.Types.Ex { ext | steps = steps })
+
+                Nothing ->
+                    JD.fail "Unkown name"
+        )
+        dec

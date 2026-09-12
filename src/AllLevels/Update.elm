@@ -9,7 +9,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg _ =
     case msg of
         LevelClicked lvl ->
-            ( makeLevel { descr = lvl.descr, goal = lvl.goal }
+            ( makeLevel { lvl = lvl.name, descr = lvl.descr, goal = lvl.goal }
                 |> ChangeToLevel
             , Cmd.none
             )
