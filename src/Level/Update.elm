@@ -11,7 +11,7 @@ import Json.Encode as JE
 import Level.Types exposing (..)
 import Level.Utils exposing (encodeSavedLevelState)
 import Set exposing (Set)
-import Utils
+import Utils exposing (alert)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -86,6 +86,11 @@ updateHandleParsed ex parsed_ex =
             , Cmd.batch
                 [ Utils.scrollToBottom "exercise-content"
                 , encodeSavedLevelState newMod |> JE.encode 0 |> Just |> Utils.saveSettings
+                , if parsed_ex == ex.goal && currAssumed ex.steps == Nothing then
+                    alert "¡FELICIDADES! Has resuelto el ejercicio, ahora presiona el botón de \"Volver\" que se encuentra al principio e intenta algún otro"
+
+                  else
+                    Cmd.none
                 ]
             )
 

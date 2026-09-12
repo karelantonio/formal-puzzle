@@ -44,6 +44,9 @@ app.ports.insertInInput.subscribe(function(args){
 app.ports.saveSettings.subscribe(function(args){
   localStorage.settings = args;
 });
+app.ports.alert.subscribe(function(args){
+  alert(args);
+});
 </script>
 </body>
 </html>

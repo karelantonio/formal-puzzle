@@ -83,3 +83,10 @@ port doneInsertInInput : (String -> msg) -> Sub msg
 
 
 port saveSettings : Maybe String -> Cmd msg
+
+
+
+-- Send an alert message to the user
+
+
+port alert : String -> Cmd msg
